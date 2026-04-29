@@ -193,7 +193,9 @@ export async function loadByTeam(orgId: string, windowSpec: WindowSpec = default
   }>();
 
   const init = (id: string | null, name: string, slug: string | null) => ({
-    id, name, slug, events: 0, items: 0, high: 0, medium: 0, low: 0, byTool: {}, topTypes: {},
+    id, name, slug, events: 0, items: 0, high: 0, medium: 0, low: 0,
+    byTool: {} as Record<string, number>,
+    topTypes: {} as Record<string, number>,
   });
 
   map.set(null, init(null, 'Geen team', null));

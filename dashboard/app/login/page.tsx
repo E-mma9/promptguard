@@ -1,11 +1,19 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { Suspense, useState, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Logo } from '@/components/Logo';
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen grid place-items-center text-ink-500">Laden…</div>}>
+      <LoginInner />
+    </Suspense>
+  );
+}
+
+function LoginInner() {
   const router = useRouter();
   const params = useSearchParams();
   const next = params.get('next') || '/dashboard';

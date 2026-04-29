@@ -1,0 +1,39 @@
+{
+  "type": "object",
+  "title": "PromptGuard managed configuration",
+  "description": "Settings pushed via Microsoft Intune, Group Policy, Jamf, or Firefox policies.json. When set, these override and lock the user-facing extension options.",
+  "properties": {
+    "apiBase": {
+      "title": "Dashboard URL",
+      "description": "Base URL of the PromptGuard dashboard (e.g. https://promptguard.uwbedrijf.nl).",
+      "type": "string"
+    },
+    "apiKey": {
+      "title": "Organisatie API-key",
+      "description": "Bearer token for ingest authentication. Treat as a secret.",
+      "type": "string"
+    },
+    "team": {
+      "title": "Team / afdeling",
+      "description": "Optional team tag attached to events from this device.",
+      "type": "string"
+    },
+    "mode": {
+      "title": "Detectie-modus",
+      "description": "monitor (alleen registreren), warn (waarschuwing tonen), block (verzending blokkeren).",
+      "type": "string",
+      "enum": ["monitor", "warn", "block"]
+    },
+    "minSeverity": {
+      "title": "Minimale ernst",
+      "description": "Vanaf welke ernst (low/medium/high) wordt actie genomen.",
+      "type": "string",
+      "enum": ["low", "medium", "high"]
+    },
+    "enabled": {
+      "title": "Extension actief",
+      "description": "Set to false to temporarily disable detection without uninstalling.",
+      "type": "boolean"
+    }
+  }
+}

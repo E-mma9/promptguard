@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --pg-grain: 0.012;
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    @apply bg-ink-50 text-ink-900 font-sans;
+    background-image:
+      radial-gradient(at 0% 0%, rgba(168, 85, 247, 0.05) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, rgba(37, 99, 235, 0.04) 0px, transparent 50%);
+    background-attachment: fixed;
+  }
+  ::selection { background: #ddd6fe; color: #1e1b4b; }
+}
+
+@layer components {
+  /* "Glass" surface used throughout the dashboard */
+  .pg-card {
+    @apply bg-white rounded-2xl shadow-card;
+  }
+  .pg-card-hover {
+    @apply transition-all hover:shadow-cardHover;
+  }
+
+  /* Tabular number display, used for stats */
+  .pg-num {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+
+  /* Custom scroll for inline lists */
+  .pg-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: #d1d5db transparent;
+  }
+  .pg-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+  .pg-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+
+  /* Severity dots and pills */
+  .pg-dot {
+    @apply inline-block w-2 h-2 rounded-full;
+  }
+  .pg-dot-high { background: #dc2626; box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15); }
+  .pg-dot-medium { background: #f59e0b; box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15); }
+  .pg-dot-low { background: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
+
+  .pg-pill {
+    @apply inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold uppercase tracking-wider;
+  }
+  .pg-pill-high { @apply bg-red-50 text-red-700 ring-1 ring-red-200; }
+  .pg-pill-medium { @apply bg-amber-50 text-amber-700 ring-1 ring-amber-200; }
+  .pg-pill-low { @apply bg-blue-50 text-blue-700 ring-1 ring-blue-200; }
+  .pg-pill-neutral { @apply bg-ink-100 text-ink-700 ring-1 ring-ink-200; }
+
+  /* Inputs */
+  .pg-input {
+    @apply w-full rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm
+           placeholder:text-ink-400 focus:outline-none focus:border-brand-700
+           focus:ring-2 focus:ring-brand-200 transition-all;
+  }
+  .pg-button {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold
+           transition-all focus:outline-none focus:ring-2 focus:ring-offset-1;
+  }
+  .pg-button-primary {
+    @apply pg-button bg-ink-900 text-white hover:bg-ink-950 focus:ring-ink-400;
+  }
+  .pg-button-secondary {
+    @apply pg-button bg-white text-ink-900 ring-1 ring-ink-300 hover:bg-ink-50 focus:ring-ink-400;
+  }
+  .pg-button-brand {
+    @apply pg-button bg-brand-700 text-white hover:bg-brand-800 focus:ring-brand-300;
+  }
+
+  /* Section labels */
+  .pg-section-label {
+    @apply text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-500;
+  }
+
+  /* Sparkline / chart background grid */
+  .pg-grid line {
+    stroke: #e5e7eb;
+    stroke-dasharray: 2 4;
+  }
+}
+
+/* Hide focus rings for non-keyboard users, keep for keyboard */
+:focus:not(:focus-visible) { outline: none; box-shadow: none; }

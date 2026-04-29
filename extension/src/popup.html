@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <title>PromptGuard</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <header class="pg-pop-header">
+    <div class="pg-pop-brand">
+      <div class="pg-pop-logo" aria-hidden="true"></div>
+      <div>
+        <div class="pg-pop-title">PromptGuard</div>
+        <div class="pg-pop-subtitle">Shadow AI monitor</div>
+      </div>
+    </div>
+    <button id="pg-toggle" class="pg-toggle" aria-pressed="true" title="Aan/uit">
+      <span class="pg-dot"></span>
+    </button>
+  </header>
+
+  <section class="pg-pop-stats">
+    <div class="pg-stat">
+      <div class="pg-stat-num" id="pg-stat-events">0</div>
+      <div class="pg-stat-lbl">events</div>
+    </div>
+    <div class="pg-stat">
+      <div class="pg-stat-num" id="pg-stat-items">0</div>
+      <div class="pg-stat-lbl">items</div>
+    </div>
+    <div class="pg-stat">
+      <div class="pg-stat-num pg-stat-high" id="pg-stat-high">0</div>
+      <div class="pg-stat-lbl">kritiek</div>
+    </div>
+  </section>
+
+  <section class="pg-pop-mode">
+    <div class="pg-pop-mode-label">Modus</div>
+    <div class="pg-segment" role="radiogroup" aria-label="Detectiemodus">
+      <button class="pg-seg" data-mode="monitor">Monitor</button>
+      <button class="pg-seg pg-seg-active" data-mode="warn">Waarschuw</button>
+      <button class="pg-seg" data-mode="block">Blokkeer</button>
+    </div>
+  </section>
+
+  <section class="pg-pop-recent">
+    <div class="pg-pop-section-title">Recente detecties</div>
+    <ul id="pg-recent-list" class="pg-recent-list">
+      <li class="pg-empty">Nog geen detecties — start een sessie in ChatGPT, Claude, Gemini of Copilot.</li>
+    </ul>
+  </section>
+
+  <footer class="pg-pop-footer">
+    <a id="pg-dashboard-link" href="#" target="_blank" rel="noreferrer noopener">Open dashboard</a>
+    <a id="pg-options-link" href="#">Instellingen</a>
+  </footer>
+
+  <script src="popup.js"></script>
+</body>
+</html>

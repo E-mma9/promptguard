@@ -1,0 +1,103 @@
+/* PromptGuard banner — high-z-index overlay used in warn/block modes. */
+
+.pg-banner {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2147483647;
+  width: min(640px, calc(100vw - 32px));
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  animation: pg-slide-in 0.18s ease-out;
+}
+
+@keyframes pg-slide-in {
+  from { transform: translate(-50%, -8px); opacity: 0; }
+  to { transform: translate(-50%, 0); opacity: 1; }
+}
+
+.pg-banner-inner {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  gap: 16px;
+  align-items: center;
+  padding: 14px 16px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow:
+    0 24px 48px -16px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(0, 0, 0, 0.06);
+  border-left: 4px solid #f59e0b;
+}
+
+.pg-banner-inner.pg-sev-high { border-left-color: #dc2626; }
+.pg-banner-inner.pg-sev-medium { border-left-color: #f59e0b; }
+.pg-banner-inner.pg-sev-low { border-left-color: #2563eb; }
+
+.pg-banner-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #fee2e2;
+  color: #991b1b;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 22px;
+  font-family: "Times New Roman", serif;
+  line-height: 1;
+}
+.pg-sev-medium .pg-banner-icon { background: #fef3c7; color: #92400e; }
+.pg-sev-low .pg-banner-icon { background: #dbeafe; color: #1e40af; }
+
+.pg-banner-body {
+  min-width: 0;
+}
+
+.pg-banner-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 2px;
+  line-height: 1.35;
+}
+.pg-banner-detail {
+  font-size: 12.5px;
+  color: #4b5563;
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+.pg-banner-help {
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.pg-banner-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.pg-btn {
+  appearance: none;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.12s ease;
+}
+.pg-btn-cancel {
+  background: #ffffff;
+  color: #111827;
+  border-color: #d1d5db;
+}
+.pg-btn-cancel:hover { background: #f9fafb; }
+.pg-btn-proceed {
+  background: #111827;
+  color: #ffffff;
+}
+.pg-btn-proceed:hover { background: #000000; }

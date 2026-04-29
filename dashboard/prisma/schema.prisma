@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  apiKey    String   @unique
+  createdAt DateTime @default(now())
+
+  users      User[]
+  teams      Team[]
+  detections Detection[]
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  role         String   @default("admin") // admin | viewer
+  orgId        String
+  org          Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+
+  @@index([orgId])
+}
+
+model Team {
+  id     String @id @default(cuid())
+  name   String
+  slug   String
+  orgId  String
+  org    Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  detections Detection[]
+
+  @@unique([orgId, slug])
+  @@index([orgId])
+}
+
+// Detection events. We store ONLY metadata: counts and types of sensitive
+// items found. Never the prompt content itself.
+model Detection {
+  id String @id @default(cuid())
+
+  orgId  String
+  org    Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  teamId String?
+  team   Team?  @relation(fields: [teamId], references: [id], onDelete: SetNull)
+
+  installId String   // anonymized per-install hash
+  tool      String   // chatgpt | claude | gemini | copilot | mistral | perplexity | you
+  source    String   // paste | submit
+  action    String   // monitored | warned | blocked
+
+  // Aggregate metadata. counts and severityCounts are JSON strings on SQLite.
+  counts         String  // {"bsn": 14, "iban-nl": 2}
+  severityCounts String  // {"high": 16, "medium": 1, "low": 0}
+  totalItems     Int
+  highest        String  // high | medium | low
+  characterCount Int
+
+  detectedAt DateTime @default(now())
+
+  @@index([orgId, detectedAt])
+  @@index([orgId, tool])
+  @@index([orgId, teamId])
+  @@index([orgId, highest])
+}

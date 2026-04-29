@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <title>PromptGuard — Instellingen</title>
+  <link rel="stylesheet" href="options.css" />
+</head>
+<body>
+  <main class="pg-opt">
+    <header class="pg-opt-header">
+      <div class="pg-opt-brand">
+        <div class="pg-opt-logo" aria-hidden="true"></div>
+        <h1>PromptGuard <span>Instellingen</span></h1>
+      </div>
+      <div class="pg-opt-tag" id="pg-status">Niet verbonden</div>
+    </header>
+
+    <section class="pg-card">
+      <div class="pg-card-head">
+        <h2>Verbinding met dashboard</h2>
+        <p>De extension verzendt geanonimiseerde metadata (geen prompttekst) naar uw eigen PromptGuard-dashboard.</p>
+      </div>
+      <div class="pg-form">
+        <label>
+          <span>Dashboard-URL</span>
+          <input id="pg-api-base" type="url" placeholder="https://promptguard.uwbedrijf.nl" />
+        </label>
+        <label>
+          <span>API-key (organisatie)</span>
+          <input id="pg-api-key" type="password" autocomplete="off" placeholder="pg_live_..." />
+        </label>
+        <label>
+          <span>Team / afdeling (optioneel)</span>
+          <input id="pg-team" type="text" placeholder="bijv. marketing, finance, engineering" />
+        </label>
+        <div class="pg-form-actions">
+          <button id="pg-test" class="pg-btn pg-btn-secondary" type="button">Testen</button>
+          <button id="pg-save" class="pg-btn pg-btn-primary" type="button">Opslaan</button>
+        </div>
+        <div id="pg-test-result" class="pg-test-result" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section class="pg-card">
+      <div class="pg-card-head">
+        <h2>Gedrag</h2>
+        <p>Bepaal hoe de extension reageert wanneer gevoelige data is gedetecteerd.</p>
+      </div>
+      <div class="pg-form">
+        <label>
+          <span>Modus</span>
+          <select id="pg-mode">
+            <option value="monitor">Monitor — alleen registreren</option>
+            <option value="warn" selected>Waarschuw — vraag bevestiging</option>
+            <option value="block">Blokkeer — voorkom verzenden</option>
+          </select>
+        </label>
+        <label>
+          <span>Minimale ernst</span>
+          <select id="pg-min-severity">
+            <option value="low">Laag — alle detecties</option>
+            <option value="medium" selected>Medium — gevoelig + kritiek</option>
+            <option value="high">Hoog — alleen kritieke items</option>
+          </select>
+        </label>
+      </div>
+    </section>
+
+    <section class="pg-card">
+      <div class="pg-card-head">
+        <h2>Privacy</h2>
+        <p>De extension scant prompts <strong>lokaal</strong> in uw browser. Alleen geanonimiseerde tellingen worden naar het dashboard verzonden — nooit de prompttekst zelf.</p>
+      </div>
+      <div class="pg-priv-grid">
+        <div class="pg-priv">
+          <div class="pg-priv-icon">✓</div>
+          <div>
+            <strong>Lokale detectie</strong><br />
+            Alle pattern-matching gebeurt in uw browser, zonder netwerkcalls.
+          </div>
+        </div>
+        <div class="pg-priv">
+          <div class="pg-priv-icon">✓</div>
+          <div>
+            <strong>Open source</strong><br />
+            De code van deze extension is volledig leesbaar voor uw IT-team.
+          </div>
+        </div>
+        <div class="pg-priv">
+          <div class="pg-priv-icon">✓</div>
+          <div>
+            <strong>Geen prompttekst</strong><br />
+            Naar het dashboard gaat alleen <em>"X BSN's gedetecteerd"</em> — nooit de inhoud.
+          </div>
+        </div>
+        <div class="pg-priv">
+          <div class="pg-priv-icon">✓</div>
+          <div>
+            <strong>Geanonimiseerde gebruiker-ID</strong><br />
+            Een SHA-256-hash, niet uw e-mailadres of naam.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="pg-card pg-card-danger">
+      <div class="pg-card-head">
+        <h2>Lokale data wissen</h2>
+        <p>Verwijder alle lokaal opgeslagen detecties en de installatie-ID. Instellingen blijven behouden.</p>
+      </div>
+      <button id="pg-clear" class="pg-btn pg-btn-danger" type="button">Lokale data wissen</button>
+    </section>
+  </main>
+  <script src="options.js"></script>
+</body>
+</html>

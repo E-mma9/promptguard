@@ -1,0 +1,82 @@
+{
+  "manifest_version": 3,
+  "name": "PromptGuard",
+  "short_name": "PromptGuard",
+  "version": "0.1.0",
+  "description": "Shadow AI monitor voor het Nederlandse MKB. Detecteert lokaal welke gevoelige data medewerkers in AI-tools plakken.",
+  "author": "PromptGuard",
+
+  "permissions": [
+    "storage",
+    "alarms",
+    "notifications"
+  ],
+
+  "storage": {
+    "managed_schema": "managed_schema.json"
+  },
+
+  "host_permissions": [
+    "https://chatgpt.com/*",
+    "https://chat.openai.com/*",
+    "https://claude.ai/*",
+    "https://gemini.google.com/*",
+    "https://copilot.microsoft.com/*",
+    "https://www.bing.com/chat*",
+    "https://chat.mistral.ai/*",
+    "https://www.perplexity.ai/*",
+    "https://you.com/*"
+  ],
+
+  "background": {
+    "service_worker": "src/background.js",
+    "scripts": ["src/background.js"]
+  },
+
+  "content_scripts": [
+    {
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://chat.openai.com/*",
+        "https://claude.ai/*",
+        "https://gemini.google.com/*",
+        "https://copilot.microsoft.com/*",
+        "https://www.bing.com/chat*",
+        "https://chat.mistral.ai/*",
+        "https://www.perplexity.ai/*",
+        "https://you.com/*"
+      ],
+      "js": ["src/detector.js", "src/content.js"],
+      "css": ["src/content.css"],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+
+  "action": {
+    "default_popup": "src/popup.html",
+    "default_title": "PromptGuard",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+
+  "options_page": "src/options.html",
+
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "promptguard@local.dev",
+      "strict_min_version": "128.0"
+    }
+  }
+}

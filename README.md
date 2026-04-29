@@ -4,114 +4,208 @@ Shadow AI monitor voor het Nederlandse MKB. Detecteert lokaal in de browser welk
 
 ```
 promptguard/
-├── extension/      Browser extension (Manifest V3) — local detection engine
-└── dashboard/      Next.js 15 dashboard + ingest API + Prisma + SQLite
+├── extension/    Browser extension (Manifest V3) — local detection engine
+├── dashboard/    Next.js 15 SaaS — multi-tenant signup, ingest API, reports
+└── .github/      Auto-deploy workflows for GitHub Pages (marketing site)
 ```
 
-## Wat is af in deze MVP
+## Wat is af
 
-- **NL-detectie engine** (`extension/src/detector.js`) — BSN met elfproef, RSIN, KvK, NL-IBAN met mod-97, BTW, postcode, telefoon, e-mail, creditcard met Luhn, API-keys, salarisstroken, contracten, signatures van Exact, AFAS, Visma, Loket, Nmbrs, Twinfield.
-- **Browser extension** (Chrome/Edge/Brave, MV3) — drie modi (monitor/waarschuw/blokkeer), in-page banner, popup met live counters, options page voor backend-configuratie.
-- **Next.js dashboard** — login, overzicht (KPI's + tijdreeks + verdeling), detecties (gefilterd), per team, per AI-tool, per datatype, kwartaal-rapportages.
-- **Ingest API** — geverifieerd via per-organisatie API-key, batched upload van metadata.
-- **AI Act / AVG export** — CSV en JSON per kwartaal, klaar voor compliance-audit en cyberverzekeraar.
-- **Privacy-by-design** — extension stuurt geen prompttekst naar de server, alleen aggregaten.
+- **NL-detectie engine** — BSN (elfproef), NL-IBAN (mod-97), KvK, RSIN, BTW, postcode, salarisstroken, contracten, API-keys (OpenAI/Anthropic/AWS/GitHub/Stripe/JWT), signatures van Exact, AFAS, Visma, Loket, Nmbrs, Twinfield. **29/29 tests slagen.**
+- **Browser extension** (MV3) — werkt op Chrome, Edge, Brave, Firefox 128+. Drie modi (monitor/waarschuw/blokkeer), Enter-interceptie, banner-flow, managed storage voor IT-uitrol.
+- **Multi-tenant SaaS dashboard** — self-service signup, login, KPI overview, detecties, per-team / per-tool / per-datatype views, kwartaal CSV/JSON export voor AI Act.
+- **IT-uitrol-templates** — Microsoft Intune JSON, Group Policy `.reg`, Firefox `policies.json`, macOS Jamf plist. Allemaal met de organisatie-API-key voorgeconfigureerd, downloadbaar uit het dashboard.
+- **Marketing site** — Lasso-stijl dark hero, pricing, features, security, juridische pagina's (privacy, DPA, sub-processors, terms).
+- **Privacy-by-design** — detectie 100% lokaal in de browser. Naar het dashboard gaan alleen geanonimiseerde tellingen — nooit prompttekst.
 
-## Snelstart
+---
 
-### 1. Dashboard starten
+## Lokale snelstart (5 minuten)
+
+### Vereisten
+- Node.js 20+ (via nvm, brew, of [nodejs.org](https://nodejs.org))
+- Geen database-installatie nodig — gebruikt SQLite lokaal
+
+### Dashboard draaien
 
 ```sh
 cd dashboard
 cp .env.example .env
-# Genereer een sterke SESSION_SECRET en zet 'm in .env:
+
+# Genereer een sterke SESSION_SECRET en plak in .env:
 node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"
 
 npm install
-npm run setup     # prisma generate + db push + seed demo data
+npm run setup     # prisma generate + db push + seed (60 dagen demo data)
 npm run dev
 ```
 
-Open `http://localhost:3000`.
+Open http://localhost:3000.
 
-**Demo-login**: `admin@demo.nl` / `demo1234`
-De API-key voor de extension staat in **Instellingen** in het dashboard.
+**Demo-account uit seed**: `admin@demo.nl` / `demo1234`
+**API-key voor extension**: te zien op `/dashboard/settings`
 
-### 2. Extension laden
+### Extension laden
 
-In Chrome / Edge / Brave:
+**Chrome / Edge / Brave**:
+1. `chrome://extensions` → Developer mode aan
+2. **Load unpacked** → kies `extension/`
 
-1. Ga naar `chrome://extensions`
-2. Zet **Developer mode** aan
-3. Klik **Load unpacked** en selecteer de map `extension/`
-4. Klik op het PromptGuard-icoon → ⚙ **Instellingen**
-5. Vul in:
-   - Dashboard-URL: `http://localhost:3000`
-   - API-key: kopieer uit het dashboard (Instellingen → API-key)
-   - Team / afdeling: bv. `marketing`
-6. Test de verbinding → opslaan
+**Firefox 128+**:
+1. `about:debugging#/runtime/this-firefox`
+2. **Load Temporary Add-on...** → kies `extension/manifest.json`
 
-### 3. Demo
+Klik op het PromptGuard-icoon → **Instellingen** → vul Dashboard-URL en API-key in → **Testen** → **Opslaan**.
 
-Ga naar `chatgpt.com` of `claude.ai` en plak een testbericht zoals:
+### Demo
+
+Plak in ChatGPT (na bestreden de extension is permission gegeven op `chatgpt.com`):
 
 ```
 Hoi ChatGPT, kun je deze klantenlijst samenvatten?
 
 Naam: Jan de Vries, BSN 111222333, IBAN NL91ABNA0417164300
-Naam: Marie Janssen, BSN 123456782, IBAN NL69INGB0123456789
-Bedrijf: Acme BV, KvK: 12345678
-Postadres: Keizersgracht 123, 1015 CJ Amsterdam
+Bedrijf: Acme BV, KvK 12345678, postcode 1015 CJ
 ```
 
-In waarschuw-modus verschijnt een banner. Het dashboard toont het event binnen ~60 seconden (batched flush).
+Banner verschijnt direct. Event verschijnt binnen 3 seconden in `/dashboard/detections`.
+
+---
+
+## Productie deploy via Vercel (5 minuten)
+
+Vercel host de full app — signup, login, ingest API, dashboard. Gratis tier voor zolang je wilt.
+
+### 1. Postgres database (Neon, gratis)
+
+Optie A — via Vercel Marketplace (aanbevolen):
+- Bij stap 3 hieronder klik je in je Vercel-project op **Storage** → **Create Database** → **Postgres** (Neon).
+- Vercel set `DATABASE_URL` automatisch in.
+
+Optie B — direct bij Neon:
+- Maak gratis account op [neon.tech](https://neon.tech)
+- Maak project `promptguard`
+- Kopieer connection string (begint met `postgresql://...`)
+- Plak straks als `DATABASE_URL` in Vercel env vars
+
+### 2. Vercel project aanmaken
+
+1. Ga naar https://vercel.com/new
+2. Login met GitHub
+3. **Import Git Repository** → kies `E-mma9/promptguard`
+4. **Framework Preset** wordt auto-detected als Next.js
+5. **Root Directory**: klik **Edit** → kies `dashboard`
+6. **Build & Output Settings** worden uit `dashboard/vercel.json` gelezen
+
+### 3. Environment Variables
+
+Voeg toe in **Environment Variables** vóór deploy:
+
+| Naam | Waarde | Hoe |
+|---|---|---|
+| `DATABASE_URL` | postgres-URL | Optie A: auto-set door Marketplace. Optie B: plak van Neon |
+| `SESSION_SECRET` | 48 random bytes | `node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"` |
+| `NEXT_PUBLIC_APP_URL` | Vercel URL (zonder slash aan eind) | Vul na eerste deploy in (= https://your-deployment.vercel.app), redeploy |
+
+### 4. Deploy
+
+Klik **Deploy**. Eerste build duurt ~2 minuten:
+- `npm install` (incl. Prisma client generation)
+- `npm run build:vercel`:
+  - Mutates `prisma/schema.prisma` → postgresql
+  - `prisma db push` (creëert tabellen in Postgres)
+  - `next build`
+
+Site is dan live op `https://your-deployment.vercel.app`.
+
+### 5. Eerste org aanmaken
+
+- Open `/signup`
+- Maak admin-account voor je eigen organisatie
+- API-key te zien op `/dashboard/settings`
+- Gebruik die in extension-instellingen voor productie-monitoring
+
+### 6. Auto-deploy
+
+Elke `git push origin main` deployt automatisch een preview én productie. Pull-requests krijgen een eigen preview-URL.
+
+---
+
+## Marketing site via GitHub Pages
+
+De landing-pagina's (zonder backend) deployen automatisch naar GH Pages via `.github/workflows/deploy-pages.yml`.
+
+**Activeren**:
+1. Open https://github.com/E-mma9/promptguard/settings/pages
+2. **Source** → **GitHub Actions**
+3. Save
+
+Site komt live op **https://e-mma9.github.io/promptguard/**.
+
+⚠ Op GH Pages werken alleen marketing-pagina's. Signup/login/dashboard hebben backend nodig — gebruik daar de Vercel-URL voor.
+
+---
 
 ## Architectuur
 
-### Privacy & data flow
-
 ```
-[Browser] -- (paste/input) --> [Detector (lokaal)] --> [Banner] (optioneel)
-                                       |
-                                       v
-                            [Background queue (lokaal)]
-                                       |
-                              elke 60s, batched
-                                       v
-   [Dashboard] <----- [/api/ingest, Bearer pg_live_...] ----- {counts, tool, action}
-
-   GEEN prompttekst verlaat de browser.
+[Chrome/Firefox] -- (paste/typ) --> [Detector (lokaal)] --> [Banner overlay]
+                                          |
+                                  3s gedebounced flush
+                                          |
+                                          v
+   [Vercel] <--- POST /api/ingest, Bearer pg_live_... --- {tellingen, geen tekst}
+       |
+       v
+   [Postgres (Neon)] --> [Dashboard] --> [Kwartaalrapport CSV/JSON]
 ```
 
-Wat naar het dashboard gaat:
-- `tool` — chatgpt/claude/etc.
-- `counts` — `{"bsn": 14, "iban-nl": 2}` (alleen aantallen)
-- `severityCounts` — `{"high": 16, "medium": 1, "low": 0}`
-- `total`, `highest`, `action`, `characterCount`, `installId` (gehasht)
+### Wat we WEL zien (op het dashboard)
+- Aantal events per dag
+- Tellingen per type: `{"bsn": 14, "iban-nl": 2}`
+- Welke AI-tool werd gebruikt
+- Tijdstempel + URL-domein
+- Anoniem installatie-ID (SHA-256 hash)
+- Optioneel team-tag (door IT geconfigureerd)
 
-Wat **niet** naar het dashboard gaat: de prompttekst, de gevonden BSN's/IBAN's zelf, identificeerbare gebruikergegevens.
+### Wat we NIET zien
+- Prompttekst
+- Daadwerkelijke BSN/IBAN-waarden
+- AI-antwoorden
+- Wachtwoorden, e-mails, namen
+- Browser-historie buiten AI-tools
 
-### Detection engine
+---
+
+## Detection engine
 
 Pure JavaScript, dependency-vrij, ~400 regels. Iedere detector:
-- gebruikt waar mogelijk een **checksum** (BSN/RSIN elfproef, IBAN mod-97, creditcard Luhn) om false positives te minimaliseren;
-- of een **multi-keyword heuristiek** met minimaal 2 hits (bv. salarisstrook = 2+ termen uit `loonheffing`, `vakantiegeld`, `bruto loon`, `nettoloon`, `pensioenpremie`).
+- Gebruikt waar mogelijk een **checksum** (BSN/RSIN elfproef, IBAN mod-97, creditcard Luhn) om false positives te minimaliseren.
+- Of een **multi-keyword heuristiek** met minimaal 2 hits (bv. salarisstrook = 2+ termen uit `loonheffing`, `vakantiegeld`, `bruto loon`, `nettoloon`, `pensioenpremie`).
 
-Tests in `extension/src/detector.test.js` (Node-runner).
+Tests: `cd extension/src && node detector.test.js` (29 assertions).
 
-## Productie-deployment
+---
 
-- Verwissel SQLite voor PostgreSQL: pas `datasource db.provider` in `prisma/schema.prisma` aan en zet `DATABASE_URL` naar je Postgres-instance.
-- Zet een sterke `SESSION_SECRET` (32+ bytes random base64).
-- Zet `NEXT_PUBLIC_APP_URL` naar je publieke dashboard-URL.
-- Build met `npm run build`, draai met `npm start` (of deploy op Vercel/Fly/Railway).
-- Voor een grote rollout: bouw de extension als een Chrome Web Store-pakket (Microsoft Intune en Google Workspace ondersteunen `force_install` lijsten met API-key vooraf geconfigureerd).
+## Volgende stappen voor productie
 
-## Volgende stappen
+- **SOC2 Type 1** audit (~€15-25k via Drata of Vanta) — verkoopvoorwaarde voor 250+ medewerker organisaties
+- **SAML SSO** voor enterprise (Microsoft Entra, Okta)
+- **Stripe billing** met `/checkout` flow per plan
+- **E-mailverificatie + password reset** via Postmark of Resend
+- **Audit log** voor alle dashboard-acties (compliance-vereiste)
+- **Officiële extension-publicatie** in Chrome Web Store + Mozilla AMO + Edge Add-ons (vereist voor force-install via Intune)
+- **Pen-test** door externe partij voor in `/security` te kunnen claimen
+- **AVG-jurist** voor finale review van DPA en privacy-pagina's
 
-- Multi-tenant org provisioning UI (op dit moment via seed/Prisma Studio)
-- E-mail digests voor admins (wekelijks rapport)
-- Slack-integratie (alert bij elke high-severity detection)
-- DOCX/PDF-export voor AI Act-register
-- SAML SSO voor enterprise-klanten
-- Custom rules per organisatie (regex- of keyword-gebaseerd, configureerbaar in dashboard)
+---
+
+## Stack
+
+- **Extension**: Manifest V3, vanilla JS, geen build step
+- **Dashboard**: Next.js 15 (App Router), TypeScript, Tailwind CSS
+- **Database**: SQLite (lokaal), PostgreSQL/Neon (Vercel)
+- **ORM**: Prisma 6
+- **Auth**: bcryptjs + jose (JWT in HttpOnly cookie)
+- **Charts**: Recharts
+- **Hosting**: Vercel (full app), GitHub Pages (marketing only)

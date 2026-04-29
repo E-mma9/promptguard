@@ -5,7 +5,7 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
   return (
     <div className="min-h-screen">
       <MarketingHeader />
-      <main className="px-6 lg:px-10 py-12 max-w-3xl mx-auto">
+      <main className="px-6 lg:px-10 pt-28 lg:pt-32 pb-12 max-w-3xl mx-auto">
         <nav className="flex gap-1 text-xs mb-8 overflow-x-auto">
           <LegalNav href="/legal/privacy" label="Privacybeleid" />
           <LegalNav href="/legal/dpa" label="Verwerkersovereenkomst" />

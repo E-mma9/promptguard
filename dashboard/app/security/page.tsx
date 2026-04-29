@@ -5,7 +5,7 @@ export default function SecurityPage() {
   return (
     <div className="min-h-screen">
       <MarketingHeader />
-      <main className="px-6 lg:px-10 py-16 max-w-5xl mx-auto">
+      <main className="px-6 lg:px-10 pt-32 lg:pt-36 pb-16 max-w-5xl mx-auto">
         <header className="mb-12">
           <span className="pg-pill pg-pill-neutral mb-4">Beveiliging &amp; privacy</span>
           <h1 className="text-4xl lg:text-5xl font-bold tracking-tight text-ink-900 mb-3">Privacy-by-design, niet als afterthought.</h1>

@@ -94,3 +94,61 @@
 
 /* Hide focus rings for non-keyboard users, keep for keyboard */
 :focus:not(:focus-visible) { outline: none; box-shadow: none; }
+
+@layer components {
+  /* Glass card on a dark hero — subtle white tint with backdrop blur */
+  .pg-glass {
+    @apply bg-white/[0.04] backdrop-blur-md ring-1 ring-white/10;
+  }
+  .pg-glass-strong {
+    @apply bg-white/[0.06] backdrop-blur-xl ring-1 ring-white/15;
+  }
+
+  /* Eyebrow tag — used inside dark heroes */
+  .pg-eyebrow {
+    @apply inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] ring-1 ring-white/15 bg-white/5 text-white/80;
+  }
+
+  /* Number step — Lasso-style 0→4 indicators */
+  .pg-step-num {
+    @apply inline-grid place-items-center w-10 h-10 rounded-full
+           bg-gradient-to-br from-brand-500 to-brand-800 text-white
+           text-base font-bold shadow-lg shadow-brand-500/30 ring-1 ring-white/20;
+  }
+
+  /* Animated shimmer effect over a gradient — used on hero headline accent */
+  .pg-shimmer-text {
+    background: linear-gradient(
+      110deg,
+      #c4b5fd 0%,
+      #ffffff 40%,
+      #ffffff 60%,
+      #c4b5fd 100%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: shimmer 4s linear infinite;
+  }
+
+  /* Glow ring pulsing under elements */
+  .pg-glow {
+    position: relative;
+  }
+  .pg-glow::before {
+    content: '';
+    position: absolute;
+    inset: -16px;
+    background: radial-gradient(closest-side, rgba(124, 58, 237, 0.45), transparent);
+    filter: blur(20px);
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  /* Radial mask for fading edges of marquee */
+  .pg-marquee-mask {
+    mask-image: linear-gradient(90deg, transparent 0%, black 12%, black 88%, transparent 100%);
+    -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 12%, black 88%, transparent 100%);
+  }
+}

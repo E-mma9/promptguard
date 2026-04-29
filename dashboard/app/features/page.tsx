@@ -5,7 +5,7 @@ export default function FeaturesPage() {
   return (
     <div className="min-h-screen">
       <MarketingHeader />
-      <main className="px-6 lg:px-10 py-16 max-w-6xl mx-auto">
+      <main className="px-6 lg:px-10 pt-32 lg:pt-36 pb-16 max-w-6xl mx-auto">
         <header className="text-center max-w-2xl mx-auto mb-14">
           <span className="pg-pill pg-pill-neutral mb-4">Wat zit erin</span>
           <h1 className="text-4xl lg:text-5xl font-bold tracking-tight text-ink-900 mb-3">Alles om Shadow AI in beeld te brengen.</h1>

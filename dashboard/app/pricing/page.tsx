@@ -5,7 +5,7 @@ export default function PricingPage() {
   return (
     <div className="min-h-screen">
       <MarketingHeader />
-      <main className="px-6 lg:px-10 py-16 lg:py-20 max-w-6xl mx-auto">
+      <main className="px-6 lg:px-10 pt-32 lg:pt-36 pb-16 lg:pb-20 max-w-6xl mx-auto">
         <div className="text-center mb-14 max-w-2xl mx-auto">
           <span className="pg-pill pg-pill-neutral mb-4">Eenvoudige prijzen</span>
           <h1 className="text-4xl lg:text-5xl font-bold tracking-tight text-ink-900 mb-3">Per medewerker, per maand.</h1>

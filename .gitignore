@@ -48,3 +48,6 @@ next-env.d.ts
 # Misc temp
 .temp/
 .cache/
+
+# Accidental nested clone
+/promptguard/

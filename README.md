@@ -4,26 +4,18 @@ Shadow AI monitor voor het Nederlandse MKB. Detecteert lokaal in de browser welk
 
 ```
 promptguard/
-├── extension/    Browser extension (Manifest V3) — local detection engine
-├── dashboard/    Next.js 15 SaaS — multi-tenant signup, ingest API, reports
-└── .github/      Auto-deploy workflows for GitHub Pages (marketing site)
+├── extension/    Browser extension (Manifest V3) — lokale detection engine
+└── dashboard/    Next.js 15 app — multi-tenant signup/login, ingest API, reports
 ```
 
-## Wat is af
-
-- **NL-detectie engine** — BSN (elfproef), NL-IBAN (mod-97), KvK, RSIN, BTW, postcode, salarisstroken, contracten, API-keys (OpenAI/Anthropic/AWS/GitHub/Stripe/JWT), signatures van Exact, AFAS, Visma, Loket, Nmbrs, Twinfield. **29/29 tests slagen.**
-- **Browser extension** (MV3) — werkt op Chrome, Edge, Brave, Firefox 128+. Drie modi (monitor/waarschuw/blokkeer), Enter-interceptie, banner-flow, managed storage voor IT-uitrol.
-- **Multi-tenant SaaS dashboard** — self-service signup, login, KPI overview, detecties, per-team / per-tool / per-datatype views, kwartaal CSV/JSON export voor AI Act.
-- **IT-uitrol-templates** — Microsoft Intune JSON, Group Policy `.reg`, Firefox `policies.json`, macOS Jamf plist. Allemaal met de organisatie-API-key voorgeconfigureerd, downloadbaar uit het dashboard.
-- **Marketing site** — Lasso-stijl dark hero, pricing, features, security, juridische pagina's (privacy, DPA, sub-processors, terms).
-- **Privacy-by-design** — detectie 100% lokaal in de browser. Naar het dashboard gaan alleen geanonimiseerde tellingen — nooit prompttekst.
+Dit is een interne app — geen marketingsite, geen publieke landingspagina. `/` redirect direct naar `/login`.
 
 ---
 
-## Lokale snelstart (5 minuten)
+## Lokale snelstart
 
 ### Vereisten
-- Node.js 20+ (via nvm, brew, of [nodejs.org](https://nodejs.org))
+- Node.js 20+
 - Geen database-installatie nodig — gebruikt SQLite lokaal
 
 ### Dashboard draaien
@@ -40,7 +32,7 @@ npm run setup     # prisma generate + db push + seed (60 dagen demo data)
 npm run dev
 ```
 
-Open http://localhost:3000.
+Open http://localhost:3000 → wordt direct doorgestuurd naar `/login`.
 
 **Demo-account uit seed**: `admin@demo.nl` / `demo1234`
 **API-key voor extension**: te zien op `/dashboard/settings`
@@ -59,7 +51,7 @@ Klik op het PromptGuard-icoon → **Instellingen** → vul Dashboard-URL en API-
 
 ### Demo
 
-Plak in ChatGPT (na bestreden de extension is permission gegeven op `chatgpt.com`):
+Plak in ChatGPT (op `chatgpt.com`, na de extension toestemming gegeven te hebben):
 
 ```
 Hoi ChatGPT, kun je deze klantenlijst samenvatten?
@@ -68,81 +60,51 @@ Naam: Jan de Vries, BSN 111222333, IBAN NL91ABNA0417164300
 Bedrijf: Acme BV, KvK 12345678, postcode 1015 CJ
 ```
 
-Banner verschijnt direct. Event verschijnt binnen 3 seconden in `/dashboard/detections`.
+Banner verschijnt direct in de browser. Event verschijnt binnen 3 seconden in `/dashboard/detections`.
+
+### Tests
+
+```sh
+cd extension/src && node detector.test.js   # 29 assertions
+```
 
 ---
 
-## Productie deploy via Vercel (5 minuten)
+## Productie deploy via Vercel
 
-Vercel host de full app — signup, login, ingest API, dashboard. Gratis tier voor zolang je wilt.
+Vercel host de full app — signup, login, ingest API, dashboard.
 
-### 1. Postgres database (Neon, gratis)
+### 1. Postgres (Neon, gratis)
 
-Optie A — via Vercel Marketplace (aanbevolen):
-- Bij stap 3 hieronder klik je in je Vercel-project op **Storage** → **Create Database** → **Postgres** (Neon).
-- Vercel set `DATABASE_URL` automatisch in.
+- **Optie A** — bij stap 2 in Vercel project: **Storage** → **Create Database** → **Postgres** (Neon). `DATABASE_URL` wordt automatisch ingevuld.
+- **Optie B** — direct bij [neon.tech](https://neon.tech): maak project, kopieer connection string, plak straks als `DATABASE_URL`.
 
-Optie B — direct bij Neon:
-- Maak gratis account op [neon.tech](https://neon.tech)
-- Maak project `promptguard`
-- Kopieer connection string (begint met `postgresql://...`)
-- Plak straks als `DATABASE_URL` in Vercel env vars
+### 2. Vercel project
 
-### 2. Vercel project aanmaken
-
-1. Ga naar https://vercel.com/new
-2. Login met GitHub
-3. **Import Git Repository** → kies `E-mma9/promptguard`
-4. **Framework Preset** wordt auto-detected als Next.js
-5. **Root Directory**: klik **Edit** → kies `dashboard`
-6. **Build & Output Settings** worden uit `dashboard/vercel.json` gelezen
+1. https://vercel.com/new → Import Git Repository → `E-mma9/promptguard`
+2. **Root Directory**: `dashboard`
+3. Build settings worden uit `dashboard/vercel.json` gelezen
 
 ### 3. Environment Variables
 
-Voeg toe in **Environment Variables** vóór deploy:
-
-| Naam | Waarde | Hoe |
-|---|---|---|
-| `DATABASE_URL` | postgres-URL | Optie A: auto-set door Marketplace. Optie B: plak van Neon |
-| `SESSION_SECRET` | 48 random bytes | `node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"` |
-| `NEXT_PUBLIC_APP_URL` | Vercel URL (zonder slash aan eind) | Vul na eerste deploy in (= https://your-deployment.vercel.app), redeploy |
+| Naam | Waarde |
+|---|---|
+| `DATABASE_URL` | postgres-URL (auto bij Optie A, plak bij Optie B) |
+| `SESSION_SECRET` | 48 random bytes via `node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"` |
+| `NEXT_PUBLIC_APP_URL` | `https://your-deployment.vercel.app` (na eerste deploy invullen + redeploy) |
 
 ### 4. Deploy
 
-Klik **Deploy**. Eerste build duurt ~2 minuten:
-- `npm install` (incl. Prisma client generation)
-- `npm run build:vercel`:
-  - Mutates `prisma/schema.prisma` → postgresql
-  - `prisma db push` (creëert tabellen in Postgres)
-  - `next build`
+`build:vercel` script doet:
+1. `scripts/use-postgres.mjs` muteert `prisma/schema.prisma` provider naar `postgresql`
+2. `prisma generate` + `prisma db push` → tabellen in Postgres
+3. `next build`
 
-Site is dan live op `https://your-deployment.vercel.app`.
+Auto-deploy op elke `git push origin main`.
 
-### 5. Eerste org aanmaken
+### 5. Eerste org
 
-- Open `/signup`
-- Maak admin-account voor je eigen organisatie
-- API-key te zien op `/dashboard/settings`
-- Gebruik die in extension-instellingen voor productie-monitoring
-
-### 6. Auto-deploy
-
-Elke `git push origin main` deployt automatisch een preview én productie. Pull-requests krijgen een eigen preview-URL.
-
----
-
-## Marketing site via GitHub Pages
-
-De landing-pagina's (zonder backend) deployen automatisch naar GH Pages via `.github/workflows/deploy-pages.yml`.
-
-**Activeren**:
-1. Open https://github.com/E-mma9/promptguard/settings/pages
-2. **Source** → **GitHub Actions**
-3. Save
-
-Site komt live op **https://e-mma9.github.io/promptguard/**.
-
-⚠ Op GH Pages werken alleen marketing-pagina's. Signup/login/dashboard hebben backend nodig — gebruik daar de Vercel-URL voor.
+`/signup` → maak admin-account → API-key staat op `/dashboard/settings` → in extension-instellingen plakken.
 
 ---
 
@@ -150,13 +112,13 @@ Site komt live op **https://e-mma9.github.io/promptguard/**.
 
 ```
 [Chrome/Firefox] -- (paste/typ) --> [Detector (lokaal)] --> [Banner overlay]
-                                          |
+                                          │
                                   3s gedebounced flush
-                                          |
-                                          v
+                                          │
+                                          ▼
    [Vercel] <--- POST /api/ingest, Bearer pg_live_... --- {tellingen, geen tekst}
-       |
-       v
+       │
+       ▼
    [Postgres (Neon)] --> [Dashboard] --> [Kwartaalrapport CSV/JSON]
 ```
 
@@ -177,35 +139,190 @@ Site komt live op **https://e-mma9.github.io/promptguard/**.
 
 ---
 
-## Detection engine
+# Code-architectuur — hoe alles in elkaar zit
 
-Pure JavaScript, dependency-vrij, ~400 regels. Iedere detector:
-- Gebruikt waar mogelijk een **checksum** (BSN/RSIN elfproef, IBAN mod-97, creditcard Luhn) om false positives te minimaliseren.
-- Of een **multi-keyword heuristiek** met minimaal 2 hits (bv. salarisstrook = 2+ termen uit `loonheffing`, `vakantiegeld`, `bruto loon`, `nettoloon`, `pensioenpremie`).
+Twee strikt gescheiden codebases met één HTTP-grens ertussen: de extension stuurt geanonimiseerde events naar `/api/ingest`. Geen andere koppeling.
 
-Tests: `cd extension/src && node detector.test.js` (29 assertions).
+## Extension (`extension/`) — pure JS, geen build step
 
----
+| Bestand | Wat het doet |
+|---|---|
+| `manifest.json` | Manifest V3. Definieert host_permissions (whitelist van AI-tool-domeinen), content scripts (injecteren `detector.js` + `content.js` op die domeinen), service worker (`background.js`), popup en options page, en `managed_schema.json` voor IT-uitrol. |
+| `src/detector.js` | **Pure-JS detection engine, ~400 regels, geen dependencies.** UMD-export zodat dezelfde code in browser én Node-tests werkt. Per datatype een aparte detector-functie (BSN, IBAN, KvK, RSIN, BTW, postcode, salarisstrook, contract, OpenAI/Anthropic/AWS/GitHub/Stripe API-keys, JWT, signatures van Exact/AFAS/Visma/Loket/Nmbrs/Twinfield). Elke detector retourneert hits met `severity` (`high`/`medium`/`low`), niet de gevonden waarde. |
+| `src/detector.test.js` | 29 assertions die elke detector valideren — zowel positives (echte BSN/IBAN/KvK strings) als negatives (random strings die niet door de checksum komen). Draait met `node detector.test.js`. |
+| `src/content.js` | Wordt op elke whitelisted AI-tool-pagina geladen. (1) Identificeert de tool uit `location.hostname`. (2) Hookt op `paste`-events en de Enter-toets in de prompt-textarea. (3) Roept `Detector.scan(text)` aan. (4) Bij hits: render banner-overlay (`content.css`). (5) Drie modi — `monitor` (silent log), `warn` (banner met "Doorgaan/Annuleren"), `block` (prevent submit). (6) Stuurt detection-metadata naar `background.js` via `chrome.runtime.sendMessage`. |
+| `src/content.css` | Styling voor de banner-overlay. Bewust simpel, geen externe lettertypen. |
+| `src/background.js` | Service worker. Verzamelt detection-events van content scripts in een 3-seconden debounce-buffer, dan POST naar `${dashboardUrl}/api/ingest` met `Authorization: Bearer ${apiKey}`. Body bevat alleen tellingen, severity, tool, timestamp, installId — **geen tekst**. |
+| `src/options.html` + `options.js` | Instellingenpagina. Velden: dashboard-URL, API-key, modus, optioneel team-tag. Test-knop pingt `/api/ingest/health`. Slaat op in `chrome.storage.sync` (gebruiker) of `chrome.storage.managed` (IT-policy). |
+| `src/popup.html` + `popup.js` | Klein popup-paneel via toolbar-icoon. Toont status (verbonden/niet-verbonden) + snelkoppeling naar instellingen. |
+| `managed_schema.json` | JSON-Schema dat IT-policy-installers beschrijft hoe ze via Intune/GPO/Jamf de extension force-installen mét voorgevulde dashboard-URL, API-key en team-tag. |
+| `icons/` | Toolbar/store icons in 16/32/48/128. |
 
-## Volgende stappen voor productie
+### Hoe de extension werkt — flow
 
-- **SOC2 Type 1** audit (~€15-25k via Drata of Vanta) — verkoopvoorwaarde voor 250+ medewerker organisaties
-- **SAML SSO** voor enterprise (Microsoft Entra, Okta)
-- **Stripe billing** met `/checkout` flow per plan
-- **E-mailverificatie + password reset** via Postmark of Resend
-- **Audit log** voor alle dashboard-acties (compliance-vereiste)
-- **Officiële extension-publicatie** in Chrome Web Store + Mozilla AMO + Edge Add-ons (vereist voor force-install via Intune)
-- **Pen-test** door externe partij voor in `/security` te kunnen claimen
-- **AVG-jurist** voor finale review van DPA en privacy-pagina's
+1. **Manifest V3 laadt content scripts** op chatgpt.com / claude.ai / etc. Eerst `detector.js` (definieert `window.PromptGuardDetector`), dan `content.js`.
+2. **Gebruiker plakt tekst.** `content.js` vangt het paste-event af, leest `event.clipboardData.getData('text')`.
+3. **`Detector.scan(text)`** loopt alle regels langs (regex + checksum), retourneert `{ hits: [{ type, severity }], counts, severityCounts, totalItems, highest }`.
+4. **Banner verschijnt** als modus ≠ `monitor`. Bij `block` wordt het Enter-event geblokkeerd.
+5. **`background.js` bufferd 3 seconden** (debounce — als gebruiker razendsnel paste-paste-paste doet stuur je niet 3 requests).
+6. **POST naar dashboard.** Faalt het (geen netwerk, ongeldig key) → event komt in een retry-queue in `chrome.storage.local`.
+
+### Detection-strategieën in `detector.js`
+
+- **Met checksum** (lage false-positive rate):
+  - **BSN / RSIN** — elfproef: 9 cijfers, gewicht 9..2 + (-1) voor laatste, sum mod 11 = 0.
+  - **IBAN** — ISO/IEC 7064 mod-97. Eerst de 4 prefixchars naar achteren rotaten, letters → cijfers (A=10, B=11, …), dan modulo 97 == 1.
+  - **Creditcard** — Luhn (van rechts, alterneer × 2, som mod 10 = 0).
+- **Met regex + format-check**:
+  - **KvK** — 8 cijfers, niet beginnend met 0 (anti-postcode-collision).
+  - **BTW** — `NL` + 9 cijfers + `B` + 2 cijfers.
+  - **Postcode** — `NNNN [optionele spatie] LL`.
+  - **API-keys** — provider-specifieke prefix-patterns (`sk-`, `sk-ant-`, `AKIA…`, `ghp_`, `xoxb-`, etc.) met length-check.
+  - **JWT** — drie base64url-segmenten gescheiden door `.`, eerste segment decodeert naar geldig JSON met `alg`-veld.
+- **Multi-keyword heuristiek** (≥ 2 termen-match in venster):
+  - **Salarisstrook** — `loonheffing`, `vakantiegeld`, `bruto loon`, `nettoloon`, `pensioenpremie`.
+  - **Contract** — `partijen`, `overweegt`, `komen overeen`, `ondertekening`.
+  - **Boekhoud-software-export** — bestandsnamen/headers van Exact, AFAS, Visma, Loket, Nmbrs, Twinfield.
+
+## Dashboard (`dashboard/`) — Next.js 15 App Router
+
+### Top-level
+
+| Pad | Wat het doet |
+|---|---|
+| `app/page.tsx` | `redirect('/login')`. Geen publieke landing. |
+| `app/layout.tsx` | Root HTML, font, globale CSS. |
+| `app/globals.css` | Tailwind + design tokens (kleuren `ink-*`, `brand-*`, `pg-input`, `pg-button-primary` utility classes). |
+| `middleware.ts` | Bewaakt `/dashboard/*`. Leest JWT uit cookie via `lib/auth.ts`, redirect naar `/login?next=...` als ongeldig. |
+| `next.config.ts` | Server actions enabled (2 MB body). Geen extra config. |
+| `vercel.json` | Pin `framework: nextjs`, `buildCommand: build:vercel`, region `fra1` (EU). |
+
+### Auth flow (`app/api/auth/`, `lib/auth.ts`)
+
+1. **Signup** — `POST /api/auth/signup` met `{organizationName, email, password, name, acceptedTerms}`:
+   - Validatie + `bcryptjs.hash(password, 12)`.
+   - Maakt `Organization` (genereert `apiKey` als `pg_live_${randomBytes(24).hex}`) + eerste `User` met `role='admin'`.
+   - `lib/auth.ts` zet JWT (jose, HS256, 30 dagen) in HttpOnly + Secure + SameSite=Lax cookie `pg_session`.
+   - Response: `{redirectTo: '/dashboard/welcome'}`.
+2. **Login** — `POST /api/auth/login`. Vergelijkt `bcrypt.compare`, zelfde JWT-cookie.
+3. **Logout** — `POST /api/auth/logout`. Wist cookie via `Set-Cookie: pg_session=; Max-Age=0`.
+4. **Middleware** verifieert elk request naar `/dashboard/*`. Bij ongeldig: redirect naar `/login?next=${pathname}`.
+
+### Ingest API (`app/api/ingest/route.ts`)
+
+```
+POST /api/ingest
+Authorization: Bearer pg_live_abc...
+Body: {
+  installId: "sha256-hash...",
+  tool: "chatgpt",
+  source: "paste" | "submit",
+  action: "monitored" | "warned" | "blocked",
+  counts: {"bsn": 14, "iban-nl": 2},
+  severityCounts: {"high": 16, "medium": 1, "low": 0},
+  totalItems: 17,
+  highest: "high",
+  characterCount: 4321,
+  team?: "marketing"   // optioneel uit managed storage
+}
+```
+
+Flow: bearer-key → `prisma.organization.findUnique({where: {apiKey}})` → als team meegegeven, `upsert` Team → `prisma.detection.create()`. JSON-velden (`counts`, `severityCounts`) worden als string opgeslagen op SQLite (provider check), als JSONB op Postgres.
+
+`/api/ingest/health` is een simpele 200-OK voor de "Testen"-knop in extension-options.
+
+### Dashboard UI (`app/dashboard/`)
+
+| Route | Doel |
+|---|---|
+| `dashboard/page.tsx` | KPI overview — totaal events, % met high-severity, top 5 datatypes, weekgrafiek. |
+| `dashboard/detections/` | Event-lijst met filters (datum, tool, team, severity). Pagineert. |
+| `dashboard/tools/` | Per-tool uitsplitsing (welk percentage gaat naar ChatGPT vs Claude vs Gemini, met datatype-distributie per tool). |
+| `dashboard/teams/` | Per-team uitsplitsing (alleen zichtbaar als IT teams heeft uitgerold via managed storage). |
+| `dashboard/types/` | Per-datatype uitsplitsing (welke teams/tools zijn de zwaarste BSN-pasters?). |
+| `dashboard/reports/` | Kwartaalrapport-generator — geeft AI Act-vereiste samenvatting + downloads naar `/api/reports/quarterly`. |
+| `dashboard/settings/` | Toont organisatie-API-key (regenerate-knop), beheer team-tags. |
+| `dashboard/deploy/` | **Genereert IT-uitroltemplates** — Microsoft Intune JSON, Group Policy `.reg`, Firefox `policies.json`, Jamf macOS plist. Allemaal vooraf ingevuld met de juiste dashboard-URL en API-key. Pure client-side template-substitutie. |
+| `dashboard/welcome/` | Onboarding na signup: 3-stappen-checklist (extension installeren, API-key plakken, eerste detectie genereren). |
+| `dashboard/layout.tsx` | Sidebar (`components/Sidebar.tsx`) + page header. |
+
+### `lib/`
+
+| Bestand | Wat erin zit |
+|---|---|
+| `db.ts` | Singleton `PrismaClient` (HMR-veilig in dev — checkt `globalThis`). |
+| `auth.ts` | JWT-helpers (`signSession`, `verifySession`, `getCurrentUser`), cookie-naam, expires. Wrapper rond `jose`. |
+| `queries.ts` | Alle complexe Prisma-queries voor de UI. Aggregaties per dag/tool/team/datatype. Telt JSON-velden (`counts`) door ze te parsen — op Postgres zou je dit met `jsonb_each` op SQL-niveau doen, maar voor MKB-volumes (~10k events/maand) volstaat client-side aggregeren. |
+| `format.ts` | Datum/getal-formatters — Nederlandse locale, dd-mm-jjjj, duizendpunten. |
+| `labels.ts` | Mensvriendelijke labels per `tool`/`type`/`severity` (`bsn` → "BSN-nummer", `chatgpt` → "ChatGPT", `high` → "Hoog risico"). Eén plek voor i18n later. |
+
+### `components/`
+
+| Component | Doel |
+|---|---|
+| `Sidebar.tsx` | Linker navigatie binnen `/dashboard/*`. Highlight actieve route, toont user-email + logout. |
+| `PageHeader.tsx` | Titel + subtitel + optionele rechter-actieknoppen, hergebruikt op alle dashboard-routes. |
+| `Kpi.tsx` | KPI-tegel (label + getal + trend-pijl). |
+| `Charts.tsx` | Recharts-wrappers (line voor weektrend, bar voor per-tool, pie voor severity-mix). |
+| `SeverityPill.tsx` | Gekleurde badge `high`/`medium`/`low`. |
+| `Logo.tsx` | SVG-logo, optioneel met tekst. |
+
+### `prisma/`
+
+```
+Organization (apiKey UNIQUE — hoe extension authenticeert)
+  ├── User[]       (admin | viewer, bcrypt password)
+  ├── Team[]       (org+slug UNIQUE — voor managed-storage tags)
+  └── Detection[]  ← waar alle events landen
+```
+
+`Detection` is bewust schraal: `tool`, `source`, `action`, `counts` (JSON-string), `severityCounts`, `totalItems`, `highest`, `installId`, `characterCount`. Indexen op `(orgId, detectedAt)` plus de drie filter-dimensies (`tool`, `teamId`, `highest`). Alle relaties cascade-delete vanaf Organization — één DSAR-verzoek wist alles.
+
+`prisma/seed.ts` genereert 60 dagen demo-data met realistische verdelingen per datatype/tool/team voor de demo-org.
+
+`scripts/use-postgres.mjs` is de Vercel-build helper: muteert `provider = "sqlite"` → `"postgresql"` voor productie. Lokaal blijft alles SQLite.
+
+## End-to-end data-flow
+
+```
+Medewerker plakt tekst in ChatGPT
+        │
+        ▼
+content.js  ──── detector.js (lokaal!) ───▶ banner als hits
+        │
+        │ chrome.runtime.sendMessage (intern)
+        ▼
+background.js  ── 3s debounce ──┐
+                                 │ POST /api/ingest  Bearer pg_live_…
+                                 │ {tool, counts, severityCounts, installId, …}
+                                 ▼
+                       app/api/ingest/route.ts
+                                 │ apiKey → orgId
+                                 │ team upsert (optioneel)
+                                 ▼
+                       prisma.detection.create()
+                                 ▼
+                       SQLite (lokaal) of Postgres/Neon (Vercel)
+                                 ▲
+                                 │ Prisma queries (lib/queries.ts)
+                       /dashboard/* server components
+                                 │
+                                 ▼
+                           Recharts grafieken
+```
+
+## De privacy-grens
+
+Eén regel houdt het hele ontwerp overeind: **prompttekst verlaat de browser nooit.** Detectie is lokaal. Naar `/api/ingest` gaan alleen tellingen + metadata. Dat is wat het AVG-by-design-verkoopverhaal mogelijk maakt — een DPO kan in 5 minuten verifiëren (via DevTools Network-tab) dat er geen persoonsgegevens richting de servers stromen, alleen statistiek.
 
 ---
 
 ## Stack
 
 - **Extension**: Manifest V3, vanilla JS, geen build step
-- **Dashboard**: Next.js 15 (App Router), TypeScript, Tailwind CSS
+- **Dashboard**: Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS 3
 - **Database**: SQLite (lokaal), PostgreSQL/Neon (Vercel)
 - **ORM**: Prisma 6
 - **Auth**: bcryptjs + jose (JWT in HttpOnly cookie)
-- **Charts**: Recharts
-- **Hosting**: Vercel (full app), GitHub Pages (marketing only)
+- **Charts**: Recharts 2
+- **Hosting**: Vercel (full app)

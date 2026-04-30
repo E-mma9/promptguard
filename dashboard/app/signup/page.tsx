@@ -37,7 +37,7 @@ export default function SignupPage() {
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
       <div className="flex flex-col justify-center px-6 lg:px-16 py-12">
-        <Link href="/" className="inline-flex">
+        <Link href="/login" className="inline-flex">
           <Logo size={32} withText />
         </Link>
         <div className="max-w-md mt-12">
@@ -105,15 +105,7 @@ export default function SignupPage() {
                 className="mt-0.5 w-4 h-4 rounded border-ink-300 text-brand-700 focus:ring-brand-500"
               />
               <span className="text-sm text-ink-700 leading-relaxed">
-                Ik ga akkoord met de{' '}
-                <Link href="/legal/dpa" className="text-brand-700 font-semibold hover:underline" target="_blank">
-                  verwerkersovereenkomst
-                </Link>
-                {' '}en het{' '}
-                <Link href="/legal/privacy" className="text-brand-700 font-semibold hover:underline" target="_blank">
-                  privacybeleid
-                </Link>
-                .
+                Ik ga akkoord met de voorwaarden van deze interne PromptGuard-omgeving.
               </span>
             </label>
 

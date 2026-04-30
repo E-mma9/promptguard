@@ -43,7 +43,7 @@ function LoginInner() {
   return (
     <div className="min-h-screen grid lg:grid-cols-2">
       <div className="flex flex-col justify-center px-6 lg:px-16 py-12">
-        <Link href="/" className="inline-flex">
+        <Link href="/login" className="inline-flex">
           <Logo size={32} withText />
         </Link>
         <div className="max-w-sm mt-12 lg:mt-20">

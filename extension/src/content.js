@@ -173,8 +173,9 @@
     if (!pasted) return;
 
     const result = Detector.scan(pasted);
-    const pastedLength = pasted.length; // save length before clearing
-    pasted = ''; // clear from memory immediately
+    const pastedLength = pasted.length;
+    const capturedText = pasted; // capture BEFORE clearing
+    pasted = ''; // clear outer variable immediately after capture
 
     if (result.total === 0) return;
 
@@ -185,8 +186,7 @@
     if (settings.mode === 'block') {
       e.preventDefault();
       e.stopPropagation();
-      showBanner(result, null, null); // no proceed in block mode
-      // mutate banner to remove proceed button
+      showBanner(result, null, null);
       if (bannerEl) {
         const proc = bannerEl.querySelector('.pg-btn-proceed');
         if (proc) proc.remove();
@@ -199,16 +199,12 @@
     if (settings.mode === 'warn') {
       e.preventDefault();
       e.stopPropagation();
-      // Capture text into a local variable before clearing `pasted`.
-      // The captured reference lives only as long as the banner is open —
-      // it is released when the callback fires (proceed) or when the banner
-      // is cancelled and the closure is GC'd.
-      const capturedText = pasted;
-      pasted = ''; // clear the outer variable immediately
+      // capturedText holds the text for the duration of the banner interaction.
+      // pasted was already cleared above; capturedText is GC'd when the closure fires.
       showBanner(
         result,
         () => { insertTextInto(target, capturedText); },
-        () => { /* cancelled — capturedText eligible for GC */ }
+        () => { /* cancelled — capturedText GC'd */ }
       );
       return;
     }

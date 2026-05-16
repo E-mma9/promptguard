@@ -17,6 +17,12 @@ const FLUSH_ALARM = 'pg_flush';
 
 const SETTING_KEYS = ['apiBase', 'apiKey', 'team', 'mode', 'enabled', 'minSeverity'];
 
+const TRUSTED_HOSTS = [
+  'chatgpt.com', 'chat.openai.com', 'claude.ai', 'gemini.google.com',
+  'copilot.microsoft.com', 'bing.com', 'chat.mistral.ai',
+  'www.perplexity.ai', 'you.com'
+];
+
 const DEFAULT_SETTINGS = {
   apiBase: 'http://localhost:3000', // dashboard URL
   apiKey: '',                        // org API key (set in options)
@@ -40,6 +46,20 @@ async function getEffectiveSettings() {
   } catch (e) {
     // managed not available on this browser/platform — fine
   }
+  // Validate managed policy values before using them
+  if (managedRaw.apiBase !== undefined && !managedRaw.apiBase.startsWith('https://')) {
+    console.warn('[PromptGuard] Managed policy: rejected insecure apiBase');
+    delete managedRaw.apiBase;
+  }
+  if (managedRaw.apiKey !== undefined && !/^pg_live_/.test(managedRaw.apiKey)) {
+    console.warn('[PromptGuard] Managed policy: rejected invalid apiKey format');
+    delete managedRaw.apiKey;
+  }
+  if (managedRaw.mode !== undefined && !['monitor', 'warn', 'block'].includes(managedRaw.mode)) {
+    console.warn('[PromptGuard] Managed policy: rejected invalid mode');
+    delete managedRaw.mode;
+  }
+
   const localRaw = await chrome.storage.local.get(SETTING_KEYS);
   const settings = { ...DEFAULT_SETTINGS };
   const managed = {};
@@ -82,6 +102,19 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 
 // ---------- Receive events from content scripts ----------
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  // Allow messages from extension pages (popup, options) — no sender.tab means it's an extension page.
+  // For content script messages, validate the sender URL against the trusted host list.
+  if (sender.tab && sender.url) {
+    try {
+      const hostname = new URL(sender.url).hostname;
+      if (!TRUSTED_HOSTS.some(h => hostname === h || hostname.endsWith('.' + h))) {
+        return false; // Reject message from untrusted page
+      }
+    } catch {
+      return false;
+    }
+  }
+
   if (!msg || !msg.kind) return;
   if (msg.kind === 'detection') {
     handleDetection(msg.payload).then(() => sendResponse({ ok: true }));
@@ -170,6 +203,12 @@ async function flushQueue() {
   const { settings } = await getEffectiveSettings();
   if (!settings.apiKey || !settings.apiBase) {
     return { ok: false, reason: 'no-api-config', queued: queue.length };
+  }
+
+  // Allow https:// everywhere, and http:// only on true localhost (not localhost.evil.com).
+  const isLocalhost = /^http:\/\/localhost(:\d+)?(\/|$)/.test(settings.apiBase);
+  if (!settings.apiBase.startsWith('https://') && !isLocalhost) {
+    return { ok: false, reason: 'insecure-url' };
   }
 
   const url = settings.apiBase.replace(/\/$/, '') + '/api/ingest';

@@ -147,16 +147,26 @@ export async function loadOverview(orgId: string, windowSpec: WindowSpec = defau
 }
 
 export async function loadDetections(orgId: string, opts: { take?: number; skip?: number; tool?: string; severity?: string } = {}) {
+  const take = Math.min(500, Math.max(1, opts.take ?? 50));
+  const skip = Math.max(0, opts.skip ?? 0);
+
   const where: Record<string, unknown> = { orgId };
-  if (opts.tool) where.tool = opts.tool;
-  if (opts.severity) where.highest = opts.severity;
+
+  if (opts.tool !== undefined && opts.tool !== '') {
+    // Silently ignore invalid values — prevents 500s if called with unexpected input.
+    if (/^[a-zA-Z0-9.]+$/.test(opts.tool)) where.tool = opts.tool;
+  }
+
+  if (opts.severity !== undefined && opts.severity !== '') {
+    if (['high', 'medium', 'low'].includes(opts.severity)) where.highest = opts.severity;
+  }
 
   const [rows, total] = await Promise.all([
     prisma.detection.findMany({
       where,
       orderBy: { detectedAt: 'desc' },
-      take: opts.take ?? 50,
-      skip: opts.skip ?? 0,
+      take,
+      skip,
       include: { team: { select: { name: true, slug: true } } },
     }),
     prisma.detection.count({ where }),

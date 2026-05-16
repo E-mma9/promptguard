@@ -8,15 +8,46 @@ const ALLOWED_TOOLS = new Set([
 const ALLOWED_SEVERITIES = new Set(['high', 'medium', 'low']);
 const ALLOWED_ACTIONS = new Set(['monitored', 'warned', 'blocked']);
 
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Authorization, Content-Type',
-  'Access-Control-Max-Age': '86400',
-};
+// Per-org in-memory rate limiter (resets every 60 seconds per org)
+const orgRateLimits = new Map<string, { count: number; resetAt: number }>();
 
-export async function OPTIONS() {
-  return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
+function checkOrgRateLimit(orgId: string, maxPerMinute = 60): boolean {
+  const now = Date.now();
+  const entry = orgRateLimits.get(orgId);
+  if (!entry || entry.resetAt < now) {
+    orgRateLimits.set(orgId, { count: 1, resetAt: now + 60_000 });
+    return true;
+  }
+  if (entry.count >= maxPerMinute) return false;
+  entry.count++;
+  return true;
+}
+
+// CORS: only allow browser extensions and explicitly configured origins.
+// Extension background scripts send no origin header at all; content scripts
+// send chrome-extension:// or moz-extension:// origins.
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(',').map((s) => s.trim()).filter(Boolean) ?? [];
+
+function isAllowedOrigin(origin: string | null): boolean {
+  if (!origin) return true; // Extension background scripts have no origin
+  if (origin.startsWith('chrome-extension://')) return true;
+  if (origin.startsWith('moz-extension://')) return true;
+  return ALLOWED_ORIGINS.includes(origin);
+}
+
+function getCorsHeaders(origin: string | null): Record<string, string> {
+  const allowed = isAllowedOrigin(origin);
+  return {
+    'Access-Control-Allow-Origin': allowed && origin ? origin : 'null',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+    'Access-Control-Max-Age': '3600',
+  };
+}
+
+export async function OPTIONS(req: NextRequest) {
+  const origin = req.headers.get('origin');
+  return new NextResponse(null, { status: 204, headers: getCorsHeaders(origin) });
 }
 
 type IngestEvent = {
@@ -34,22 +65,33 @@ type IngestEvent = {
 };
 
 export async function POST(req: NextRequest) {
+  const origin = req.headers.get('origin');
+  const corsHeaders = getCorsHeaders(origin);
+
+  if (!isAllowedOrigin(origin)) {
+    return NextResponse.json({ error: 'forbidden' }, { status: 403, headers: corsHeaders });
+  }
+
   const org = await authenticateApiKey(req.headers.get('authorization'));
-  if (!org) return NextResponse.json({ error: 'unauthorized' }, { status: 401, headers: CORS_HEADERS });
+  if (!org) return NextResponse.json({ error: 'unauthorized' }, { status: 401, headers: corsHeaders });
+
+  if (!checkOrgRateLimit(org.id)) {
+    return NextResponse.json({ error: 'rate limit exceeded' }, { status: 429, headers: corsHeaders });
+  }
 
   let body: unknown;
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: 'invalid json' }, { status: 400, headers: CORS_HEADERS });
+    return NextResponse.json({ error: 'invalid json' }, { status: 400, headers: corsHeaders });
   }
 
   const events = (body as { events?: IngestEvent[] })?.events;
   if (!Array.isArray(events) || events.length === 0) {
-    return NextResponse.json({ error: 'no events' }, { status: 400, headers: CORS_HEADERS });
+    return NextResponse.json({ error: 'no events' }, { status: 400, headers: corsHeaders });
   }
   if (events.length > 1000) {
-    return NextResponse.json({ error: 'batch too large' }, { status: 413, headers: CORS_HEADERS });
+    return NextResponse.json({ error: 'batch too large' }, { status: 413, headers: corsHeaders });
   }
 
   // Resolve teams in this org once. Use upsert to avoid races when two
@@ -77,12 +119,12 @@ export async function POST(req: NextRequest) {
     .filter((r): r is NonNullable<typeof r> => r !== null);
 
   if (rows.length === 0) {
-    return NextResponse.json({ error: 'no valid events', accepted: 0 }, { status: 400, headers: CORS_HEADERS });
+    return NextResponse.json({ error: 'no valid events', accepted: 0 }, { status: 400, headers: corsHeaders });
   }
 
   await prisma.detection.createMany({ data: rows });
 
-  return NextResponse.json({ ok: true, accepted: rows.length }, { headers: CORS_HEADERS });
+  return NextResponse.json({ ok: true, accepted: rows.length }, { headers: corsHeaders });
 }
 
 function normaliseEvent(
@@ -125,7 +167,8 @@ function normaliseEvent(
   let detectedAt: Date | undefined;
   if (typeof e.detectedAt === 'string') {
     const t = new Date(e.detectedAt);
-    if (!Number.isNaN(t.getTime()) && t.getTime() < Date.now() + 60_000) {
+    // Allow up to 5 seconds in the future to accommodate clock skew
+    if (!Number.isNaN(t.getTime()) && t.getTime() < Date.now() + 5_000) {
       detectedAt = t;
     }
   }
@@ -135,8 +178,11 @@ function normaliseEvent(
       ? e.installId
       : 'anon';
 
+  // Validate slug against already-lowercased value
   const teamSlug = typeof e.team === 'string' ? e.team.trim().toLowerCase() : '';
-  const teamId = teamSlug ? teamBySlug.get(teamSlug)?.id ?? null : null;
+  const teamId = teamSlug && /^[a-z0-9][a-z0-9-]{0,40}$/.test(teamSlug)
+    ? teamBySlug.get(teamSlug)?.id ?? null
+    : null;
 
   return {
     orgId,

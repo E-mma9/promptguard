@@ -18,55 +18,112 @@ Dit is een interne app — geen marketingsite, geen publieke landingspagina. `/`
 - Node.js 20+
 - Geen database-installatie nodig — gebruikt SQLite lokaal
 
-### Dashboard draaien
+### Stap 1 — Dashboard draaien
 
 ```sh
 cd dashboard
 cp .env.example .env
+```
 
-# Genereer een sterke SESSION_SECRET en plak in .env:
+Open `.env` en vul `SESSION_SECRET` in met een **cryptografisch willekeurige string van minimaal 32 tekens**. Genereer er één:
+
+```sh
 node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"
+```
 
+Plak de output als waarde van `SESSION_SECRET` in `.env`. Een te korte of lege secret laat de app crashen bij opstarten — dit is bewust.
+
+```sh
 npm install
 npm run setup     # prisma generate + db push + seed (60 dagen demo data)
 npm run dev
 ```
 
-Open http://localhost:3000 → wordt direct doorgestuurd naar `/login`.
+Open **http://localhost:3000** → redirect naar `/login`.
 
-**Demo-account uit seed**: `admin@demo.nl` / `demo1234`
-**API-key voor extension**: te zien op `/dashboard/settings`
+| | |
+|---|---|
+| **Demo-account (lokaal seed)** | `admin@demo.nl` / `demo1234` |
+| **API-key voor extension** | Zichtbaar op `/dashboard/settings` |
 
-### Extension laden
+> **Let op wachtwoordbeleid voor nieuwe accounts**: minimaal 12 tekens, één hoofdletter, één kleine letter, één cijfer, één speciaal teken. Het seeded demo-account (`demo1234`) werkt alleen voor inloggen, niet als voorbeeld-wachtwoord bij signup.
+
+---
+
+### Stap 2 — Extension laden
 
 **Chrome / Edge / Brave**:
-1. `chrome://extensions` → Developer mode aan
-2. **Load unpacked** → kies `extension/`
+1. Ga naar `chrome://extensions`
+2. Zet **Developer mode** aan (rechtsboven)
+3. Klik **Load unpacked** → selecteer de map `extension/`
 
 **Firefox 128+**:
-1. `about:debugging#/runtime/this-firefox`
-2. **Load Temporary Add-on...** → kies `extension/manifest.json`
+1. Ga naar `about:debugging#/runtime/this-firefox`
+2. Klik **Load Temporary Add-on...** → selecteer `extension/manifest.json`
 
-Klik op het PromptGuard-icoon → **Instellingen** → vul Dashboard-URL en API-key in → **Testen** → **Opslaan**.
+---
 
-### Demo
+### Stap 3 — Extension koppelen aan dashboard
 
-Plak in ChatGPT (op `chatgpt.com`, na de extension toestemming gegeven te hebben):
+1. Klik op het PromptGuard-icoon in de toolbar
+2. Klik op **Instellingen**
+3. Vul in:
+   - **Dashboard URL**: `http://localhost:3000`
+   - **API-key**: kopieer van `/dashboard/settings` (begint met `pg_live_`)
+4. Klik **Verbinding testen** — moet groen worden
+5. Klik **Opslaan**
+
+---
+
+### Stap 4 — Eerste detectie testen
+
+Ga naar een van de ondersteunde AI-tools (bijv. **https://claude.ai** of **https://chatgpt.com**) en plak dit testbericht in het promptvak:
 
 ```
-Hoi ChatGPT, kun je deze klantenlijst samenvatten?
+Hoi, kun je deze klantenlijst verwerken?
 
-Naam: Jan de Vries, BSN 111222333, IBAN NL91ABNA0417164300
-Bedrijf: Acme BV, KvK 12345678, postcode 1015 CJ
+Naam: Jan de Vries
+BSN: 111222333
+IBAN: NL91ABNA0417164300
+Bedrijf: Acme BV, KvK 12345678
+Postcode: 1015 CJ Amsterdam
+Salaris bruto: € 4.200,- | nettoloon: € 2.950,-
 ```
 
-Banner verschijnt direct in de browser. Event verschijnt binnen 3 seconden in `/dashboard/detections`.
+**Wat je ziet:**
+- Rood/oranje banner verschijnt direct bovenin de browser (warn-modus)
+- Knoppen: **Annuleren** (paste geannuleerd) of **Toch versturen** (paste gaat door)
+- Binnen ~3 seconden verschijnt een event in `/dashboard/detections`
 
-### Tests
+**Modi wisselen** (via extension-instellingen):
+| Modus | Gedrag |
+|---|---|
+| `monitor` | Stilletjes loggen, geen banner |
+| `warn` | Banner met keuze — **standaard** |
+| `block` | Paste volledig geblokkeerd, geen doorgaan-knop |
+
+---
+
+### Stap 5 — Detector unit tests
 
 ```sh
-cd extension/src && node detector.test.js   # 29 assertions
+cd extension/src
+node detector.test.js   # 29 assertions — alle datatypes getest
 ```
+
+Verwachte output: `✓ 29 assertions passed`
+
+---
+
+### Troubleshooting
+
+| Probleem | Oplossing |
+|---|---|
+| Dashboard start niet op | Controleer dat `SESSION_SECRET` in `.env` minimaal 32 tekens heeft |
+| Extension meldt "Geen verbinding" | Zorg dat `npm run dev` draait op poort 3000 en API-key correct is |
+| Geen banner bij plakken | Controleer dat je op een ondersteunde AI-tool-pagina zit (zie `manifest.json` host_permissions) |
+| Event verschijnt niet in dashboard | Wacht 3-5 seconden; check browser console op extension-errors |
+| `npm run setup` faalt | Verwijder `dashboard/prisma/dev.db` en probeer opnieuw |
 
 ---
 

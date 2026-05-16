@@ -19,11 +19,23 @@ export async function POST(req: NextRequest) {
   if (!organizationName || organizationName.length < 2) {
     return NextResponse.json({ error: 'Organisatienaam is verplicht' }, { status: 400 });
   }
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  if (!email || email.length > 254 || !/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/.test(email)) {
     return NextResponse.json({ error: 'Geldig e-mailadres is verplicht' }, { status: 400 });
   }
-  if (password.length < 8) {
-    return NextResponse.json({ error: 'Wachtwoord moet minimaal 8 tekens zijn' }, { status: 400 });
+  if (password.length < 12) {
+    return NextResponse.json({ error: 'Wachtwoord moet minimaal 12 tekens bevatten' }, { status: 400 });
+  }
+  if (!/[A-Z]/.test(password)) {
+    return NextResponse.json({ error: 'Wachtwoord moet minimaal één hoofdletter bevatten' }, { status: 400 });
+  }
+  if (!/[a-z]/.test(password)) {
+    return NextResponse.json({ error: 'Wachtwoord moet minimaal één kleine letter bevatten' }, { status: 400 });
+  }
+  if (!/[0-9]/.test(password)) {
+    return NextResponse.json({ error: 'Wachtwoord moet minimaal één cijfer bevatten' }, { status: 400 });
+  }
+  if (!/[!@#$%^&*()_+\-=\[\]{}|;':",.<>?/]/.test(password)) {
+    return NextResponse.json({ error: 'Wachtwoord moet minimaal één speciaal teken bevatten (!@#$%^&*()_+-=[]{}|;\':",.<>?/)' }, { status: 400 });
   }
   if (!body?.acceptedTerms) {
     return NextResponse.json({ error: 'Verwerkersovereenkomst moet worden geaccepteerd' }, { status: 400 });

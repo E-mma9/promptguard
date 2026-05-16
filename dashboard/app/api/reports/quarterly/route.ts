@@ -8,13 +8,33 @@ export async function GET(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return new Response('unauthorized', { status: 401 });
 
+  if (user.role !== 'admin') {
+    return new Response('forbidden', { status: 403 });
+  }
+
   const url = new URL(req.url);
   const cur = quarterOf(new Date());
-  const year = parseInt(url.searchParams.get('year') ?? String(cur.year), 10) || cur.year;
-  const quarter = Math.min(4, Math.max(1, parseInt(url.searchParams.get('quarter') ?? String(cur.quarter), 10) || cur.quarter));
+
+  const rawYear = parseInt(url.searchParams.get('year') ?? String(cur.year), 10) || cur.year;
+  const minYear = 2020;
+  const maxYear = cur.year + 1;
+  if (rawYear < minYear || rawYear > maxYear) {
+    return new Response(`year must be between ${minYear} and ${maxYear}`, { status: 400 });
+  }
+  const year = rawYear;
+
+  const rawQuarter = parseInt(url.searchParams.get('quarter') ?? String(cur.quarter), 10) || cur.quarter;
+  if (rawQuarter < 1 || rawQuarter > 4) {
+    return new Response('quarter must be 1, 2, 3, or 4', { status: 400 });
+  }
+  const quarter = rawQuarter;
+
   const format = url.searchParams.get('format') === 'json' ? 'json' : 'csv';
 
   const data = await loadQuarterly(user.orgId, year, quarter);
+
+  console.log(JSON.stringify({ audit: { type: 'api.report.exported', userId: user.id, timestamp: new Date().toISOString() } }));
+
   const filename = `promptguard_${user.org.name.replace(/\s+/g, '_')}_Q${quarter}_${year}.${format}`;
 
   if (format === 'json') {

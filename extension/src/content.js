@@ -85,7 +85,7 @@
           action: shouldAct(result)
             ? (ACTION_BY_MODE[settings.mode] || 'monitored')
             : 'monitored',
-          url: location.origin + location.pathname,
+          url: location.origin,
         },
       });
     } catch (e) {
@@ -124,13 +124,15 @@
       .map(([k, v]) => `${v}× ${labelByType[k] || k}`)
       .join(', ');
 
-    const sevLabel = result.highest === 'high' ? 'kritiek' : result.highest === 'medium' ? 'gevoelig' : 'lage prioriteit';
+    const safeSeverity = ['high', 'medium', 'low'].includes(result.highest) ? result.highest : 'low';
+    const safeTotal = Number(result.total) || 0;
+    const sevLabel = safeSeverity === 'high' ? 'kritiek' : safeSeverity === 'medium' ? 'gevoelig' : 'lage prioriteit';
 
     bannerEl.innerHTML = `
-      <div class="pg-banner-inner pg-sev-${result.highest}">
+      <div class="pg-banner-inner pg-sev-${safeSeverity}">
         <div class="pg-banner-icon" aria-hidden="true">!</div>
         <div class="pg-banner-body">
-          <div class="pg-banner-title">PromptGuard heeft <strong>${result.total}</strong> ${sevLabel}e item(s) gedetecteerd</div>
+          <div class="pg-banner-title">PromptGuard heeft <strong>${safeTotal}</strong> ${sevLabel}e item(s) gedetecteerd</div>
           <div class="pg-banner-detail">${escapeHtml(items)}</div>
           <div class="pg-banner-help">Deze data zou bij <strong>${escapeHtml(toolLabel(tool))}</strong> terechtkomen.</div>
         </div>
@@ -167,13 +169,16 @@
 
     const data = (e.clipboardData || window.clipboardData);
     if (!data) return;
-    const pasted = data.getData('text/plain') || data.getData('text') || '';
+    let pasted = data.getData('text/plain') || data.getData('text') || '';
     if (!pasted) return;
 
     const result = Detector.scan(pasted);
+    const pastedLength = pasted.length; // save length before clearing
+    pasted = ''; // clear from memory immediately
+
     if (result.total === 0) return;
 
-    reportDetection(result, 'paste', pasted.length);
+    reportDetection(result, 'paste', pastedLength);
 
     if (!shouldAct(result)) return;
 
@@ -192,17 +197,18 @@
     }
 
     if (settings.mode === 'warn') {
-      // We can't synchronously block then resume a paste event in the way
-      // browsers expect. So we cancel, show banner, and on Proceed we
-      // programmatically insert the text.
       e.preventDefault();
       e.stopPropagation();
+      // Capture text into a local variable before clearing `pasted`.
+      // The captured reference lives only as long as the banner is open —
+      // it is released when the callback fires (proceed) or when the banner
+      // is cancelled and the closure is GC'd.
+      const capturedText = pasted;
+      pasted = ''; // clear the outer variable immediately
       showBanner(
         result,
-        () => insertTextInto(target, pasted),
-        () => {
-          // log override = false (user cancelled); already reported above
-        }
+        () => { insertTextInto(target, capturedText); },
+        () => { /* cancelled — capturedText eligible for GC */ }
       );
       return;
     }

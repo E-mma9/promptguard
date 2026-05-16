@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 import { prisma } from './db';
 
 const COOKIE_NAME = 'pg_session';
-const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;
+const SESSION_TTL_SECONDS = 60 * 60 * 8; // 8 hours — appropriate for a security monitoring dashboard
 
 function secret(): Uint8Array {
   const s = process.env.SESSION_SECRET;
@@ -35,8 +35,10 @@ export async function setSessionCookie(token: string) {
   const c = await cookies();
   c.set(COOKIE_NAME, token, {
     httpOnly: true,
+    // secure is intentionally false in development (localhost doesn't use HTTPS);
+    // in production the flag is required so the cookie is never sent over plain HTTP.
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: 'strict', // strict prevents the cookie from being sent on any cross-site request (stronger CSRF protection than 'lax')
     path: '/',
     maxAge: SESSION_TTL_SECONDS,
   });

@@ -91,14 +91,16 @@ function LoginInner() {
             </Link>
           </p>
 
-          <div className="mt-8 rounded-xl bg-brand-50 ring-1 ring-brand-200 p-4 text-sm">
-            <strong className="text-brand-900">Demo-account</strong>
-            <p className="text-brand-800 mt-1 leading-relaxed">
-              <span className="font-mono text-[13px] bg-white/60 px-1.5 py-0.5 rounded">admin@demo.nl</span>
-              {' / '}
-              <span className="font-mono text-[13px] bg-white/60 px-1.5 py-0.5 rounded">demo1234</span>
-            </p>
-          </div>
+          {process.env.NODE_ENV !== 'production' && (
+            <div className="mt-8 rounded-xl bg-brand-50 ring-1 ring-brand-200 p-4 text-sm">
+              <strong className="text-brand-900">Demo-account</strong>
+              <p className="text-brand-800 mt-1 leading-relaxed">
+                <span className="font-mono text-[13px] bg-white/60 px-1.5 py-0.5 rounded">admin@demo.nl</span>
+                {' / '}
+                <span className="font-mono text-[13px] bg-white/60 px-1.5 py-0.5 rounded">demo1234</span>
+              </p>
+            </div>
+          )}
         </div>
       </div>
 

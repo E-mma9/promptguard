@@ -24,10 +24,27 @@
         <label>
           <span>Dashboard-URL</span>
           <input id="pg-api-base" type="url" placeholder="https://promptguard.uwbedrijf.nl" />
+          <span id="pg-api-base-err" class="pg-field-err" aria-live="polite"></span>
         </label>
         <label>
           <span>API-key (organisatie)</span>
-          <input id="pg-api-key" type="password" autocomplete="off" placeholder="pg_live_..." />
+          <div class="pg-input-with-toggle">
+            <input id="pg-api-key" type="password" autocomplete="off" placeholder="pg_live_..." />
+            <button id="pg-api-key-toggle" class="pg-eye-btn" type="button" aria-label="API-key tonen/verbergen" title="Tonen/verbergen">
+              <!-- eye icon -->
+              <svg id="pg-eye-show" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <!-- eye-off icon (hidden by default) -->
+              <svg id="pg-eye-hide" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden>
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"></path>
+                <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"></path>
+                <line x1="1" y1="1" x2="23" y2="23"></line>
+              </svg>
+            </button>
+          </div>
+          <span id="pg-api-key-err" class="pg-field-err" aria-live="polite"></span>
         </label>
         <label>
           <span>Team / afdeling (optioneel)</span>
@@ -103,6 +120,14 @@
       </div>
     </section>
 
+    <section class="pg-card">
+      <div class="pg-card-head">
+        <h2>Data exporteren</h2>
+        <p>Download een JSON-rapport van alle lokaal opgeslagen detecties en statistieken.</p>
+      </div>
+      <button id="pg-export" class="pg-btn pg-btn-secondary" type="button">Download rapport</button>
+    </section>
+
     <section class="pg-card pg-card-danger">
       <div class="pg-card-head">
         <h2>Lokale data wissen</h2>
@@ -110,6 +135,10 @@
       </div>
       <button id="pg-clear" class="pg-btn pg-btn-danger" type="button">Lokale data wissen</button>
     </section>
+
+    <footer class="pg-opt-footer">
+      PromptGuard versie <span id="pg-version"></span>
+    </footer>
   </main>
   <script src="options.js"></script>
 </body>

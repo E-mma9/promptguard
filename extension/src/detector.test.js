@@ -74,7 +74,8 @@ async function ask() {
 
 const r2 = PG.scan(prompt2);
 assert(r2.counts['api-key'] === 1, `prompt2 should detect 1 API key (got ${r2.counts['api-key']})`);
-assert(r2.counts['source-code'] === 1, `prompt2 should detect source code (got ${r2.counts['source-code']})`);
+// Note: source-code threshold raised (kw >= 6, text.length > 300, sym ratio > 0.07)
+// so this short snippet no longer triggers source-code — the API key hit is what matters.
 assert(r2.highest === 'high', 'prompt2 highest severity should be high');
 
 // Scenario 3: a finance employee pasting a salary slip.
@@ -106,6 +107,66 @@ const prompt5 = `Kun je dit contract korter maken?
 De ondergetekende, Acme BV, hierna te noemen "Opdrachtgever", in aanmerking nemende dat partijen een samenwerking willen aangaan, komen overeen het volgende.`;
 const r5 = PG.scan(prompt5);
 assert(r5.counts['contract'] === 1, `prompt5 should detect contract (got ${r5.counts['contract']})`);
+
+// Scenario 6: zorg detector — EPD/patient export with multiple healthcare keywords.
+console.log('\n[zorg detector]');
+const prompt6 = `Kun je dit samenvatten?
+
+Patiëntnummer: 987654
+BSN-nummer: 111222333
+Diagnose: Diabetes mellitus type 2
+Behandelplan: Metformine 500mg 2x daags
+Medicatie: zie bijlage
+Anamnese: klachten sinds 6 maanden
+HIS exportdatum: 2025-01-15`;
+
+const r6 = PG.scan(prompt6);
+assert(r6.counts['zorg'] === 1, `prompt6 should detect zorgdata (got ${r6.counts['zorg']})`);
+assert(r6.highest === 'high', 'prompt6 highest severity should be high');
+
+// Scenario 7: wiskundige formules mogen GEEN source-code detectie triggeren.
+console.log('\n[source-code false positive — math formulas]');
+const prompt7 = `Leg uit wat de afgeleiden zijn van f(x) = x^2 + 3x + 2.
+De afgeleide is f'(x) = 2x + 3. Als x = 5, dan is f'(5) = 13.
+Dit geldt voor alle reële getallen in het domein (x > 0).
+De integraal van f(x) over [0, 10] = [x^3/3 + 3x^2/2 + 2x] = 483.33.
+Let op: dit is een simpel voorbeeld zonder import van bibliotheken.`;
+
+const r7 = PG.scan(prompt7);
+assert(!r7.counts['source-code'], `prompt7 (math text) should NOT trigger source-code detection (got ${r7.counts['source-code']})`);
+
+// Scenario 8: postcode false-positive reductie.
+// "1234 AB" zonder adrescontext (bijv. een kamercode) mag niet geflagd worden.
+// "1234 AB" met straatnaam-context WEL.
+console.log('\n[postcode false positive reduction]');
+
+const prompt8a = `Vergaderzaal 1234 AB is gereserveerd voor morgen.
+Product SKU: 5678 CD. Kamer 9012 EF.`;
+const r8a = PG.scan(prompt8a);
+assert(!r8a.counts['postcode'], `prompt8a (room/product codes) should NOT trigger postcode (got ${r8a.counts['postcode']})`);
+
+const prompt8b = `Mijn adres is Keizersgracht 123, 1015 CJ Amsterdam.`;
+const r8b = PG.scan(prompt8b);
+assert(r8b.counts['postcode'] >= 1, `prompt8b (street context) should detect postcode (got ${r8b.counts['postcode']})`);
+
+const prompt8c = `Stuur het naar postcode 2500 GH.`;
+const r8c = PG.scan(prompt8c);
+assert(r8c.counts['postcode'] >= 1, `prompt8c ("postcode" keyword) should detect postcode (got ${r8c.counts['postcode']})`);
+
+// Scenario 9: DigiD + BSN context boost.
+console.log('\n[DigiD + BSN severity boost]');
+const prompt9 = `DigiD sessie export:
+BSN: 111222333
+token: abc123`;
+
+const r9 = PG.scan(prompt9);
+assert(r9.counts['digid-bsn'] === 1, `prompt9 should detect DigiD+BSN combo (got ${r9.counts['digid-bsn']})`);
+assert(r9.highest === 'high', 'prompt9 highest severity should be high');
+
+// DigiD zonder BSN mag NIET de combo triggeren.
+const prompt9b = `Ik gebruik DigiD om in te loggen bij Mijn Overheid.`;
+const r9b = PG.scan(prompt9b);
+assert(!r9b.counts['digid-bsn'], `prompt9b (DigiD without BSN) should NOT trigger digid-bsn combo (got ${r9b.counts['digid-bsn']})`);
 
 console.log(`\nResult: ${passed} passed, ${failed} failed`);
 process.exit(failed === 0 ? 0 : 1);

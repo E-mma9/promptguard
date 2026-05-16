@@ -2,6 +2,16 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// PROVIDER NOTE
+// Local development uses SQLite (provider = "sqlite", DATABASE_URL="file:./dev.db").
+// Production / Vercel uses PostgreSQL (provider = "postgresql").
+//
+// DO NOT manually change the provider here for production.
+// The build:vercel script (scripts/use-postgres.mjs) patches this file automatically
+// before `prisma generate` runs on the Vercel build pipeline.
+//
+// If DATABASE_URL starts with "postgresql://" or "postgres://", you must also
+// set provider = "postgresql" (or let the script do it).
 datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")

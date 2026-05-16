@@ -177,6 +177,9 @@
   });
 
   // Dutch postcode — 4 digits + 2 letters (uppercase).
+  // Context-check: only flag when surrounded by address indicators within 50 chars,
+  // or when the word "postcode"/"pc:" appears nearby. This avoids false positives on
+  // room numbers, product codes, reference numbers etc.
   detectors.push({
     id: 'postcode',
     label: 'Postcode',
@@ -184,11 +187,21 @@
     detect(text) {
       const out = [];
       const re = /\b\d{4}\s?[A-Z]{2}\b/g;
+      // Street-type suffixes that indicate an actual address context.
+      // We use a non-left-boundary match so compound words like "Keizersgracht"
+      // and "Kalverstraat" are caught by their street-type suffix.
+      const streetIndicators = /(?:straat|laan|weg|plein|kade|singel|dijk|gracht|allee|boulevard|dreef|steeg|pad|hof|ring|baan)\b/i;
+      // "postcode", "pc:", or "postadres" also signal address context.
+      const postcodeKeyword = /\b(?:postcode|postadres|pc\s*:)/i;
       let m;
       while ((m = re.exec(text)) !== null) {
-        // Avoid flagging things that look like room numbers etc.
-        // Must be followed by/preceded by something that suggests an address.
-        out.push({ type: 'postcode', start: m.index, end: m.index + m[0].length, severity: Severity.LOW });
+        // Extract a 50-char window around the match for context inspection.
+        const windowStart = Math.max(0, m.index - 50);
+        const windowEnd = Math.min(text.length, m.index + m[0].length + 50);
+        const window = text.slice(windowStart, windowEnd);
+        if (streetIndicators.test(window) || postcodeKeyword.test(window)) {
+          out.push({ type: 'postcode', start: m.index, end: m.index + m[0].length, severity: Severity.LOW });
+        }
       }
       return out;
     },
@@ -301,6 +314,37 @@
     },
   });
 
+  // Dutch healthcare data — EPD/HIS exports, patient records, care-specific identifiers.
+  // Three or more distinct zorg-domain keywords indicate likely patient data.
+  detectors.push({
+    id: 'zorg',
+    label: 'Zorgdata',
+    severity: Severity.HIGH,
+    detect(text) {
+      const out = [];
+      const keywords = [
+        'patientnummer', 'patiëntnummer', 'bsn-nummer', 'zorgverzekeringsnummer',
+        'agb-code', 'uzovi', 'diagnose', 'behandelplan', 'epd', 'his ',
+        'medicatie', 'anamnese', 'dbc-code',
+      ];
+      const lower = text.toLowerCase();
+      let hits = 0;
+      let firstHit = -1;
+      for (const kw of keywords) {
+        const idx = lower.indexOf(kw);
+        if (idx !== -1) {
+          hits++;
+          if (firstHit === -1 || idx < firstHit) firstHit = idx;
+        }
+      }
+      // 3+ distinct healthcare keywords strongly suggests a patient record / EPD export.
+      if (hits >= 3 && firstHit !== -1) {
+        out.push({ type: 'zorg', start: firstHit, end: firstHit + 30, severity: Severity.HIGH, hits });
+      }
+      return out;
+    },
+  });
+
   // Dutch contract / legal signature
   detectors.push({
     id: 'contract',
@@ -363,7 +407,7 @@
       const codeSymbols = /[{};()=]/g;
       const kw = (text.match(codeKeywords) || []).length;
       const sym = (text.match(codeSymbols) || []).length;
-      if (text.length > 200 && kw >= 4 && sym / text.length > 0.05) {
+      if (text.length > 300 && kw >= 6 && sym / text.length > 0.07) {
         out.push({ type: 'source-code', start: 0, end: Math.min(40, text.length), severity: Severity.MEDIUM });
       }
       return out;
@@ -396,6 +440,22 @@
         // detectors must never break the whole scan
       }
     }
+
+    // DigiD context boost: when a BSN is found AND the word "DigiD" appears in the
+    // text, this strongly suggests a DigiD session export or SAML token is present.
+    // Flag it as an additional high-severity synthetic match so the UI surfaces it.
+    const hasBSN = matches.some((m) => m.type === 'bsn');
+    const hasDigiD = /\bDigiD\b/i.test(text);
+    if (hasBSN && hasDigiD) {
+      matches.push({
+        type: 'digid-bsn',
+        start: 0,
+        end: 0,
+        severity: Severity.HIGH,
+        hint: 'DigiD context met BSN — mogelijk SAML/sessie-export',
+      });
+    }
+
     const counts = {};
     const severityCounts = { high: 0, medium: 0, low: 0 };
     for (const m of matches) {

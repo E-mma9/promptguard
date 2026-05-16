@@ -22,6 +22,8 @@ export default async function OverviewPage() {
     value: t.events,
   }));
 
+  const hasData = data.eventCount > 0;
+
   return (
     <div>
       <PageHeader
@@ -62,112 +64,154 @@ export default async function OverviewPage() {
           />
         </section>
 
-        <section className="pg-card p-6">
-          <div className="flex items-end justify-between mb-2">
-            <div>
-              <h2 className="font-semibold text-ink-900">Detecties over tijd</h2>
-              <p className="text-xs text-ink-500 mt-0.5">Aantal gevoelige items per dag, opgesplitst naar ernst.</p>
-            </div>
-            <Legend />
-          </div>
-          <StackedAreaSeries data={data.series} />
-        </section>
-
-        <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="pg-card p-6 lg:col-span-2">
-            <div className="flex items-end justify-between mb-4">
-              <div>
-                <h2 className="font-semibold text-ink-900">Top AI-tools</h2>
-                <p className="text-xs text-ink-500 mt-0.5">Aantal events per tool, laatste 30 dagen.</p>
+        {!hasData ? (
+          <EmptyDashboard />
+        ) : (
+          <>
+            <section className="pg-card p-6">
+              <div className="flex items-end justify-between mb-2">
+                <div>
+                  <h2 className="font-semibold text-ink-900">Detecties over tijd</h2>
+                  <p className="text-xs text-ink-500 mt-0.5">Aantal gevoelige items per dag, opgesplitst naar ernst.</p>
+                </div>
+                <Legend />
               </div>
-            </div>
-            <BarBreakdown data={toolBars} />
-          </div>
+              <StackedAreaSeries data={data.series} />
+            </section>
 
-          <div className="pg-card p-6">
-            <h2 className="font-semibold text-ink-900 mb-1">Verdeling per ernst</h2>
-            <p className="text-xs text-ink-500">Events ingedeeld op hoogste ernstniveau.</p>
-            <div className="mt-4">
-              <SeverityDonut
-                high={data.severityTotals.high}
-                medium={data.severityTotals.medium}
-                low={data.severityTotals.low}
-              />
-            </div>
-            <div className="grid grid-cols-3 gap-3 mt-4 text-center">
-              <SevStat label="Kritiek" value={data.severityTotals.high} sev="high" />
-              <SevStat label="Gevoelig" value={data.severityTotals.medium} sev="medium" />
-              <SevStat label="Laag" value={data.severityTotals.low} sev="low" />
-            </div>
-          </div>
-        </section>
-
-        <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="pg-card p-6 lg:col-span-1">
-            <h2 className="font-semibold text-ink-900 mb-4">Top datatypes</h2>
-            <ol className="space-y-2">
-              {data.topTypes.length === 0 && (
-                <li className="text-sm text-ink-500">Geen data in dit venster.</li>
-              )}
-              {data.topTypes.map(({ type, total }, i) => {
-                const max = data.topTypes[0]?.total ?? 1;
-                const pct = Math.max(2, Math.round((total / max) * 100));
-                return (
-                  <li key={type} className="space-y-1">
-                    <div className="flex justify-between text-[13px]">
-                      <span className="font-medium text-ink-800">
-                        <span className="text-ink-400 mr-2 pg-num text-xs">{String(i + 1).padStart(2, '0')}</span>
-                        {TYPE_LABELS[type] ?? type}
-                      </span>
-                      <span className="pg-num text-ink-700 font-semibold">{fmtNum(total)}</span>
-                    </div>
-                    <div className="h-1.5 bg-ink-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-brand-700 rounded-full" style={{ width: `${pct}%` }} />
-                    </div>
-                  </li>
-                );
-              })}
-            </ol>
-          </div>
-
-          <div className="pg-card p-6 lg:col-span-2">
-            <div className="flex items-end justify-between mb-4">
-              <div>
-                <h2 className="font-semibold text-ink-900">Recente detecties</h2>
-                <p className="text-xs text-ink-500 mt-0.5">De laatste 12 events. Geen prompttekst opgeslagen.</p>
-              </div>
-              <Link href="/dashboard/detections" className="text-xs font-semibold text-brand-700 hover:text-brand-800">
-                Alles bekijken &rarr;
-              </Link>
-            </div>
-            <ul className="divide-y divide-ink-100">
-              {data.recent.length === 0 && (
-                <li className="py-8 text-sm text-ink-500 text-center">Nog geen detecties geregistreerd.</li>
-              )}
-              {data.recent.map((r) => (
-                <li key={r.id} className="py-2.5 flex items-center gap-3">
-                  <SeverityPill severity={r.highest} />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[13.5px] text-ink-900 truncate font-medium">
-                      {fmtNum(r.totalItems)} item(s) gedetecteerd
-                      {r.teamName && <span className="text-ink-500 font-normal"> &middot; {r.teamName}</span>}
-                    </div>
-                    <div className="text-xs text-ink-500 truncate mt-0.5">
-                      {Object.entries(r.counts)
-                        .slice(0, 3)
-                        .map(([k, v]) => `${v}× ${TYPE_LABELS[k] ?? k}`)
-                        .join(', ')}
-                    </div>
+            <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="pg-card p-6 lg:col-span-2">
+                <div className="flex items-end justify-between mb-4">
+                  <div>
+                    <h2 className="font-semibold text-ink-900">Top AI-tools</h2>
+                    <p className="text-xs text-ink-500 mt-0.5">Aantal events per tool, laatste 30 dagen.</p>
                   </div>
-                  <ToolBadge tool={r.tool} />
-                  <ActionPill action={r.action} />
-                  <div className="text-xs text-ink-400 pg-num w-20 text-right">{fmtRelative(r.detectedAt)}</div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
+                </div>
+                {toolBars.length > 0 ? (
+                  <BarBreakdown data={toolBars} />
+                ) : (
+                  <ChartEmptyState message="Nog geen tool-data beschikbaar." />
+                )}
+              </div>
+
+              <div className="pg-card p-6">
+                <h2 className="font-semibold text-ink-900 mb-1">Verdeling per ernst</h2>
+                <p className="text-xs text-ink-500">Events ingedeeld op hoogste ernstniveau.</p>
+                <div className="mt-4">
+                  <SeverityDonut
+                    high={data.severityTotals.high}
+                    medium={data.severityTotals.medium}
+                    low={data.severityTotals.low}
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-3 mt-4 text-center">
+                  <SevStat label="Kritiek" value={data.severityTotals.high} sev="high" />
+                  <SevStat label="Gevoelig" value={data.severityTotals.medium} sev="medium" />
+                  <SevStat label="Laag" value={data.severityTotals.low} sev="low" />
+                </div>
+              </div>
+            </section>
+
+            <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="pg-card p-6 lg:col-span-1">
+                <h2 className="font-semibold text-ink-900 mb-4">Top datatypes</h2>
+                <ol className="space-y-2">
+                  {data.topTypes.length === 0 && (
+                    <li className="text-sm text-ink-500">Geen data in dit venster.</li>
+                  )}
+                  {data.topTypes.map(({ type, total }, i) => {
+                    const max = data.topTypes[0]?.total ?? 1;
+                    const pct = Math.max(2, Math.round((total / max) * 100));
+                    return (
+                      <li key={type} className="space-y-1">
+                        <div className="flex justify-between text-[13px]">
+                          <span className="font-medium text-ink-800">
+                            <span className="text-ink-400 mr-2 pg-num text-xs">{String(i + 1).padStart(2, '0')}</span>
+                            {TYPE_LABELS[type] ?? type}
+                          </span>
+                          <span className="pg-num text-ink-700 font-semibold">{fmtNum(total)}</span>
+                        </div>
+                        <div className="h-1.5 bg-ink-100 rounded-full overflow-hidden">
+                          <div className="h-full bg-brand-700 rounded-full" style={{ width: `${pct}%` }} />
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </div>
+
+              <div className="pg-card p-6 lg:col-span-2">
+                <div className="flex items-end justify-between mb-4">
+                  <div>
+                    <h2 className="font-semibold text-ink-900">Recente detecties</h2>
+                    <p className="text-xs text-ink-500 mt-0.5">De laatste 12 events. Geen prompttekst opgeslagen.</p>
+                  </div>
+                  <Link href="/dashboard/detections" className="text-xs font-semibold text-brand-700 hover:text-brand-800">
+                    Alles bekijken &rarr;
+                  </Link>
+                </div>
+                <ul className="divide-y divide-ink-100">
+                  {data.recent.map((r) => (
+                    <li key={r.id} className="py-2.5 flex items-center gap-3">
+                      <SeverityPill severity={r.highest} />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[13.5px] text-ink-900 truncate font-medium">
+                          {fmtNum(r.totalItems)} item(s) gedetecteerd
+                          {r.teamName && <span className="text-ink-500 font-normal"> &middot; {r.teamName}</span>}
+                        </div>
+                        <div className="text-xs text-ink-500 truncate mt-0.5">
+                          {Object.entries(r.counts)
+                            .slice(0, 3)
+                            .map(([k, v]) => `${v}× ${TYPE_LABELS[k] ?? k}`)
+                            .join(', ')}
+                        </div>
+                      </div>
+                      <ToolBadge tool={r.tool} />
+                      <ActionPill action={r.action} />
+                      <div className="text-xs text-ink-400 pg-num w-20 text-right">{fmtRelative(r.detectedAt)}</div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </section>
+          </>
+        )}
       </div>
+    </div>
+  );
+}
+
+function EmptyDashboard() {
+  return (
+    <div className="pg-card p-12 flex flex-col items-center justify-center text-center">
+      <div className="w-16 h-16 rounded-2xl bg-ink-100 grid place-items-center mb-5">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <rect x="4" y="20" width="4" height="8" rx="1" fill="#d1d5db" />
+          <rect x="10" y="14" width="4" height="14" rx="1" fill="#d1d5db" />
+          <rect x="16" y="17" width="4" height="11" rx="1" fill="#d1d5db" />
+          <rect x="22" y="10" width="4" height="18" rx="1" fill="#d1d5db" />
+        </svg>
+      </div>
+      <h2 className="text-lg font-semibold text-ink-900 mb-2">Nog geen data beschikbaar</h2>
+      <p className="text-sm text-ink-600 max-w-md mb-6">
+        Installeer de browser-extension en configureer je API-key om detecties te starten. Zodra de eerste event binnenkomt, verschijnen hier de charts.
+      </p>
+      <div className="flex gap-3">
+        <Link href="/dashboard/welcome" className="pg-button-primary">
+          Aan de slag →
+        </Link>
+        <Link href="/dashboard/deploy" className="pg-button-secondary">
+          IT-uitrolinstructies
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function ChartEmptyState({ message }: { message: string }) {
+  return (
+    <div className="h-[220px] flex items-center justify-center">
+      <p className="text-sm text-ink-500">{message}</p>
     </div>
   );
 }

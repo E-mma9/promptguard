@@ -5,11 +5,12 @@
   "version": "0.1.0",
   "description": "Shadow AI monitor voor het Nederlandse MKB. Detecteert lokaal welke gevoelige data medewerkers in AI-tools plakken.",
   "author": "PromptGuard",
+  "homepage_url": "https://promptguard.nl",
+  "minimum_chrome_version": "116",
 
   "permissions": [
     "storage",
-    "alarms",
-    "notifications"
+    "alarms"
   ],
 
   "storage": {
@@ -29,8 +30,7 @@
   ],
 
   "background": {
-    "service_worker": "src/background.js",
-    "scripts": ["src/background.js"]
+    "service_worker": "src/background.js"
   },
 
   "content_scripts": [

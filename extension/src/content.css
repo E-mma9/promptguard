@@ -1,38 +1,69 @@
-/* PromptGuard banner — high-z-index overlay used in warn/block modes. */
+/* PromptGuard banner — high-z-index overlay pinned to the top of the viewport. */
 
 .pg-banner {
   position: fixed;
-  top: 16px;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 0;
+  left: 0;
+  width: 100%;
   z-index: 2147483647;
-  width: min(640px, calc(100vw - 32px));
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   animation: pg-slide-in 0.18s ease-out;
+  /* Reset any page-level box-sizing that could affect our layout */
+  box-sizing: border-box;
 }
 
 @keyframes pg-slide-in {
-  from { transform: translate(-50%, -8px); opacity: 0; }
-  to { transform: translate(-50%, 0); opacity: 1; }
+  from { transform: translateY(-100%); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
 }
 
 .pg-banner-inner {
+  position: relative;
   display: grid;
   grid-template-columns: 40px 1fr auto;
   gap: 16px;
   align-items: center;
-  padding: 14px 16px;
+  padding: 14px 48px 14px 16px; /* right padding leaves room for the × close button */
   background: #ffffff;
-  border-radius: 12px;
   box-shadow:
-    0 24px 48px -16px rgba(0, 0, 0, 0.28),
+    0 4px 24px -4px rgba(0, 0, 0, 0.22),
     0 0 0 1px rgba(0, 0, 0, 0.06);
-  border-left: 4px solid #f59e0b;
+  border-bottom: 3px solid #f59e0b;
 }
 
-.pg-banner-inner.pg-sev-high { border-left-color: #dc2626; }
-.pg-banner-inner.pg-sev-medium { border-left-color: #f59e0b; }
-.pg-banner-inner.pg-sev-low { border-left-color: #2563eb; }
+/* Severity accent — bottom border colour */
+.pg-banner-inner.pg-sev-high   { border-bottom-color: #dc2626; background: #fff5f5; }
+.pg-banner-inner.pg-sev-medium { border-bottom-color: #d97706; background: #fffbeb; }
+.pg-banner-inner.pg-sev-low    { border-bottom-color: #2563eb; background: #eff6ff; }
+
+/* Close button (×) — positioned top-right of the banner-inner */
+.pg-btn-cancel {
+  /* Override the generic .pg-btn positioning — make it a corner close button */
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #6b7280;
+  border: 1px solid transparent;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-family: inherit;
+  transition: all 0.12s ease;
+  appearance: none;
+}
+.pg-btn-cancel:hover {
+  background: #f3f4f6;
+  color: #111827;
+  border-color: #d1d5db;
+}
 
 .pg-banner-icon {
   width: 40px;
@@ -46,9 +77,10 @@
   font-size: 22px;
   font-family: "Times New Roman", serif;
   line-height: 1;
+  flex-shrink: 0;
 }
 .pg-sev-medium .pg-banner-icon { background: #fef3c7; color: #92400e; }
-.pg-sev-low .pg-banner-icon { background: #dbeafe; color: #1e40af; }
+.pg-sev-low    .pg-banner-icon { background: #dbeafe; color: #1e40af; }
 
 .pg-banner-body {
   min-width: 0;
@@ -79,6 +111,7 @@
   align-items: center;
 }
 
+/* Generic button base */
 .pg-btn {
   appearance: none;
   border: 1px solid transparent;
@@ -89,15 +122,56 @@
   cursor: pointer;
   font-family: inherit;
   transition: all 0.12s ease;
+  white-space: nowrap;
 }
-.pg-btn-cancel {
-  background: #ffffff;
-  color: #111827;
-  border-color: #d1d5db;
-}
-.pg-btn-cancel:hover { background: #f9fafb; }
+
 .pg-btn-proceed {
   background: #111827;
   color: #ffffff;
 }
 .pg-btn-proceed:hover { background: #000000; }
+
+/* Severity-coloured proceed button */
+.pg-sev-high   .pg-btn-proceed { background: #dc2626; }
+.pg-sev-high   .pg-btn-proceed:hover { background: #b91c1c; }
+.pg-sev-medium .pg-btn-proceed { background: #d97706; }
+.pg-sev-medium .pg-btn-proceed:hover { background: #b45309; }
+.pg-sev-low    .pg-btn-proceed { background: #2563eb; }
+.pg-sev-low    .pg-btn-proceed:hover { background: #1d4ed8; }
+
+/* ── Mobile responsiveness ─────────────────────────────────────────────────── */
+/* On narrow screens: switch to a single-column layout and stack buttons. */
+@media (max-width: 540px) {
+  .pg-banner-inner {
+    grid-template-columns: 36px 1fr;
+    grid-template-rows: auto auto;
+    gap: 10px 12px;
+    padding: 12px 40px 12px 12px;
+  }
+
+  /* Actions row spans both columns on small screens */
+  .pg-banner-actions {
+    grid-column: 1 / -1;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .pg-btn {
+    width: 100%;
+    text-align: center;
+    padding: 10px 14px;
+  }
+
+  /* Close button stays top-right regardless */
+  .pg-btn-cancel {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 26px;
+    height: 26px;
+    /* Override the full-width rule from .pg-btn above */
+    width: 26px !important;
+    text-align: center;
+  }
+}

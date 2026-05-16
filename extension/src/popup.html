@@ -14,10 +14,22 @@
         <div class="pg-pop-subtitle">Shadow AI monitor</div>
       </div>
     </div>
-    <button id="pg-toggle" class="pg-toggle" aria-pressed="true" title="Aan/uit">
-      <span class="pg-dot"></span>
-    </button>
+    <div class="pg-pop-header-right">
+      <span id="pg-conn-badge" class="pg-conn-badge pg-conn-orange" title="Lokaal actief, geen dashboard"></span>
+      <button id="pg-toggle" class="pg-toggle" aria-pressed="true" title="Aan/uit">
+        <span class="pg-dot"></span>
+      </button>
+    </div>
   </header>
+
+  <!-- Setup wizard banner — shown when no apiKey configured -->
+  <div id="pg-setup-banner" class="pg-setup-banner" hidden>
+    <div class="pg-setup-banner-text">
+      <strong>Nog niet ingesteld</strong>
+      <span>Koppel een dashboard of stel je modus in.</span>
+    </div>
+    <button id="pg-setup-btn" class="pg-setup-btn" type="button">Stel in</button>
+  </div>
 
   <section class="pg-pop-stats">
     <div class="pg-stat">
@@ -35,11 +47,13 @@
   </section>
 
   <section class="pg-pop-mode">
-    <div class="pg-pop-mode-label">Modus</div>
+    <div class="pg-pop-mode-label">
+      Modus: <span id="pg-mode-label-active" class="pg-mode-active-label">Waarschuw</span>
+    </div>
     <div class="pg-segment" role="radiogroup" aria-label="Detectiemodus">
-      <button class="pg-seg" data-mode="monitor">Monitor</button>
-      <button class="pg-seg pg-seg-active" data-mode="warn">Waarschuw</button>
-      <button class="pg-seg" data-mode="block">Blokkeer</button>
+      <button class="pg-seg" data-mode="monitor" aria-pressed="false">Monitor</button>
+      <button class="pg-seg pg-seg-active" data-mode="warn" aria-pressed="true">Waarschuw</button>
+      <button class="pg-seg" data-mode="block" aria-pressed="false">Blokkeer</button>
     </div>
   </section>
 
@@ -51,9 +65,20 @@
   </section>
 
   <footer class="pg-pop-footer">
-    <a id="pg-dashboard-link" href="#" target="_blank" rel="noreferrer noopener">Open dashboard</a>
-    <a id="pg-options-link" href="#">Instellingen</a>
+    <div class="pg-pop-footer-left">
+      <a id="pg-dashboard-link" href="#" target="_blank" rel="noreferrer noopener">Open dashboard</a>
+      <a id="pg-options-link" href="#">Instellingen</a>
+    </div>
+    <button id="pg-sync-btn" class="pg-sync-btn" type="button" title="Synchroniseer naar dashboard">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="23 4 23 10 17 10"></polyline>
+        <polyline points="1 20 1 14 7 14"></polyline>
+        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+      </svg>
+      Sync
+    </button>
   </footer>
+  <div id="pg-sync-feedback" class="pg-sync-feedback" aria-live="polite"></div>
 
   <script src="popup.js"></script>
 </body>

@@ -222,8 +222,14 @@ async function flushQueue() {
       body: JSON.stringify({ events: queue }),
     });
     if (!res.ok) {
+      // INTENTIONAL: the queue is NOT cleared on any non-2xx response.
+      // This includes 401 (invalid/expired API key), 429 (rate-limit), 5xx (server errors).
+      // Events are preserved and will be retried on the next alarm tick (every 60 s)
+      // or on the next debounced flush triggered by a new detection event.
+      // Only a successful 2xx response (res.ok === true) causes the queue to be emptied.
       return { ok: false, reason: 'http-' + res.status, queued: queue.length };
     }
+    // Queue is cleared only on confirmed success, preventing data loss on transient failures.
     await chrome.storage.local.set({ [QUEUE_KEY]: [] });
     return { ok: true, sent: queue.length };
   } catch (e) {

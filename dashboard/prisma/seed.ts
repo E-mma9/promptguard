@@ -67,7 +67,7 @@ const TYPE_SEVERITY: Record<string, 'high' | 'medium' | 'low'> = {
 };
 
 function pickWeighted<T extends string>(weights: Record<T, number>): T {
-  const total = Object.values(weights).reduce((a, b) => a + b, 0);
+  const total = (Object.values(weights) as number[]).reduce((a, b) => a + b, 0);
   let r = Math.random() * total;
   for (const [k, w] of Object.entries(weights)) {
     r -= w as number;

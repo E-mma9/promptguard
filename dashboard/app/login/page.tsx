@@ -32,7 +32,11 @@ function LoginInner() {
         body: JSON.stringify({ email, password }),
       });
       if (!res.ok) {
-        setError('Ongeldige gegevens. Probeer opnieuw.');
+        if (res.status === 429) {
+          setError('Te veel mislukte pogingen. Wacht 15 minuten en probeer opnieuw.');
+        } else {
+          setError('Ongeldig e-mailadres of wachtwoord. Probeer opnieuw.');
+        }
         return;
       }
       router.push(next);

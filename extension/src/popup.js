@@ -15,7 +15,17 @@
     you: 'You.com', unknown: 'AI-tool',
   };
 
+  const MODE_LABELS = {
+    monitor: 'Monitor',
+    warn: 'Waarschuw',
+    block: 'Blokkeer',
+  };
+
   function el(id) { return document.getElementById(id); }
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
 
   function timeAgo(iso) {
     const t = new Date(iso).getTime();
@@ -56,57 +66,157 @@
       const li = document.createElement('li');
       li.className = 'pg-evt';
       const sev = e.highest || 'low';
-      li.innerHTML = `
-        <span class="pg-evt-dot pg-sev-${sev}"></span>
-        <div class="pg-evt-body">
-          <div class="pg-evt-title">${e.total} item(s) — ${escapeHtml(TOOL_LABELS[e.tool] || e.tool)}</div>
-          <div class="pg-evt-meta">${escapeHtml(topItems(e.counts))}</div>
-        </div>
-        <span class="pg-evt-time">${timeAgo(e.detectedAt)}</span>
-      `;
+
+      const dot = document.createElement('span');
+      dot.className = 'pg-evt-dot pg-sev-' + escapeHtml(sev);
+
+      const body = document.createElement('div');
+      body.className = 'pg-evt-body';
+
+      const title = document.createElement('div');
+      title.className = 'pg-evt-title';
+      title.textContent = e.total + ' item(s) — ' + (TOOL_LABELS[e.tool] || escapeHtml(e.tool));
+
+      const meta = document.createElement('div');
+      meta.className = 'pg-evt-meta';
+      meta.textContent = topItems(e.counts);
+
+      body.appendChild(title);
+      body.appendChild(meta);
+
+      const time = document.createElement('span');
+      time.className = 'pg-evt-time';
+      time.textContent = timeAgo(e.detectedAt);
+
+      li.appendChild(dot);
+      li.appendChild(body);
+      li.appendChild(time);
       list.appendChild(li);
     }
   }
 
-  function escapeHtml(s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // ---------- Load settings via background (respects managed policy) ----------
+
+  const { settings: cur } = await new Promise((resolve) => {
+    chrome.runtime.sendMessage({ kind: 'getSettings' }, (resp) => {
+      resolve(resp || { settings: {}, managed: {} });
+    });
+  });
+
+  const mode = cur.mode || 'warn';
+  const enabled = cur.enabled !== false;
+  const apiKey = cur.apiKey || '';
+  const apiBase = cur.apiBase || '';
+
+  // ---------- Setup wizard banner ----------
+
+  if (!apiKey) {
+    el('pg-setup-banner').hidden = false;
+  }
+  el('pg-setup-btn').addEventListener('click', () => {
+    chrome.runtime.openOptionsPage();
+  });
+
+  // ---------- Connection status badge ----------
+
+  const badge = el('pg-conn-badge');
+  if (!enabled) {
+    badge.className = 'pg-conn-badge pg-conn-red';
+    badge.title = 'PromptGuard uitgeschakeld';
+  } else if (apiKey && apiBase) {
+    badge.className = 'pg-conn-badge pg-conn-green';
+    badge.title = 'Verbonden met dashboard';
+  } else {
+    badge.className = 'pg-conn-badge pg-conn-orange';
+    badge.title = 'Lokaal actief, geen dashboard';
   }
 
-  // ---------- Wire up ----------
+  // ---------- Mode segment ----------
 
-  const settings = await chrome.storage.local.get(['mode', 'enabled', 'apiBase']);
-  const mode = settings.mode || 'warn';
-  const enabled = settings.enabled !== false;
+  const modeActiveLbl = el('pg-mode-label-active');
+  modeActiveLbl.textContent = MODE_LABELS[mode] || mode;
 
-  // Mode segment
   document.querySelectorAll('.pg-seg').forEach((btn) => {
-    if (btn.dataset.mode === mode) btn.classList.add('pg-seg-active');
-    else btn.classList.remove('pg-seg-active');
+    const isActive = btn.dataset.mode === mode;
+    btn.classList.toggle('pg-seg-active', isActive);
+    btn.setAttribute('aria-pressed', String(isActive));
     btn.addEventListener('click', async () => {
-      document.querySelectorAll('.pg-seg').forEach((b) => b.classList.remove('pg-seg-active'));
+      document.querySelectorAll('.pg-seg').forEach((b) => {
+        b.classList.remove('pg-seg-active');
+        b.setAttribute('aria-pressed', 'false');
+      });
       btn.classList.add('pg-seg-active');
+      btn.setAttribute('aria-pressed', 'true');
+      modeActiveLbl.textContent = MODE_LABELS[btn.dataset.mode] || btn.dataset.mode;
       await chrome.storage.local.set({ mode: btn.dataset.mode });
     });
   });
 
-  // Enable toggle
+  // ---------- Enable toggle ----------
+
   const toggle = el('pg-toggle');
   toggle.setAttribute('aria-pressed', String(enabled));
   toggle.addEventListener('click', async () => {
     const next = toggle.getAttribute('aria-pressed') !== 'true';
     toggle.setAttribute('aria-pressed', String(next));
     await chrome.storage.local.set({ enabled: next });
+    // Update badge to reflect disabled state
+    if (!next) {
+      badge.className = 'pg-conn-badge pg-conn-red';
+      badge.title = 'PromptGuard uitgeschakeld';
+    } else if (apiKey && apiBase) {
+      badge.className = 'pg-conn-badge pg-conn-green';
+      badge.title = 'Verbonden met dashboard';
+    } else {
+      badge.className = 'pg-conn-badge pg-conn-orange';
+      badge.title = 'Lokaal actief, geen dashboard';
+    }
   });
 
-  // Footer links
+  // ---------- Footer links ----------
+
   el('pg-options-link').addEventListener('click', (e) => {
     e.preventDefault();
     chrome.runtime.openOptionsPage();
   });
-  const apiBase = settings.apiBase || 'http://localhost:3000';
-  el('pg-dashboard-link').href = apiBase.replace(/\/$/, '') + '/dashboard';
 
-  // Recent events
+  const dashBase = apiBase || 'http://localhost:3000';
+  el('pg-dashboard-link').href = dashBase.replace(/\/$/, '') + '/dashboard';
+
+  // ---------- Sync / Flush button ----------
+
+  const syncBtn = el('pg-sync-btn');
+  const syncFeedback = el('pg-sync-feedback');
+  let syncTimer = null;
+
+  function showSyncFeedback(msg, kind) {
+    syncFeedback.textContent = msg;
+    syncFeedback.className = 'pg-sync-feedback pg-sync-feedback-' + kind;
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(() => {
+      syncFeedback.textContent = '';
+      syncFeedback.className = 'pg-sync-feedback';
+    }, 3000);
+  }
+
+  syncBtn.addEventListener('click', () => {
+    syncBtn.disabled = true;
+    chrome.runtime.sendMessage({ kind: 'flush' }, (resp) => {
+      syncBtn.disabled = false;
+      if (chrome.runtime.lastError) {
+        showSyncFeedback('Fout: ' + escapeHtml(chrome.runtime.lastError.message), 'err');
+        return;
+      }
+      if (resp && resp.ok === false) {
+        showSyncFeedback('Synchronisatie mislukt.', 'err');
+      } else {
+        showSyncFeedback('Gesynchroniseerd.', 'ok');
+      }
+    });
+  });
+
+  // ---------- Recent events ----------
+
   chrome.runtime.sendMessage({ kind: 'getRecent' }, (resp) => {
     if (resp) render(resp);
   });

@@ -3,12 +3,26 @@ import { getCurrentUser } from '@/lib/auth';
 import { loadQuarterly } from '@/lib/queries';
 import { TOOL_LABELS, TYPE_LABELS } from '@/lib/labels';
 import { quarterOf } from '@/lib/format';
+import { csvCell, csvRow, safeFilename } from '@/lib/csv';
+import { clientIp } from '@/lib/request';
+import { auditLog } from '@/lib/audit';
 
 export async function GET(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return new Response('unauthorized', { status: 401 });
 
+  const ip = clientIp(req);
+  const userAgent = req.headers.get('user-agent') ?? undefined;
+
   if (user.role !== 'admin') {
+    auditLog({
+      type: 'access.denied',
+      userId: user.id,
+      orgId: user.orgId,
+      ipAddress: ip,
+      userAgent,
+      details: { endpoint: 'reports/quarterly', reason: 'not_admin' },
+    });
     return new Response('forbidden', { status: 403 });
   }
 
@@ -33,9 +47,16 @@ export async function GET(req: NextRequest) {
 
   const data = await loadQuarterly(user.orgId, year, quarter);
 
-  console.log(JSON.stringify({ audit: { type: 'api.report.exported', userId: user.id, timestamp: new Date().toISOString() } }));
+  auditLog({
+    type: 'api.report.exported',
+    userId: user.id,
+    orgId: user.orgId,
+    ipAddress: ip,
+    userAgent,
+    details: { year, quarter, format },
+  });
 
-  const filename = `promptguard_${user.org.name.replace(/\s+/g, '_')}_Q${quarter}_${year}.${format}`;
+  const filename = `promptguard_${safeFilename(user.org.name)}_Q${quarter}_${year}.${format}`;
 
   if (format === 'json') {
     return new Response(JSON.stringify(data, null, 2), {
@@ -48,33 +69,33 @@ export async function GET(req: NextRequest) {
 
   // Build CSV: a single document with multiple sections.
   const lines: string[] = [];
-  lines.push(`"PromptGuard rapport"`);
-  lines.push(`"Organisatie","${csv(user.org.name)}"`);
-  lines.push(`"Periode","Q${quarter} ${year}"`);
-  lines.push(`"Start","${data.period.start.toISOString()}"`);
-  lines.push(`"Eind","${data.period.end.toISOString()}"`);
-  lines.push(`"Totaal events","${data.totals.events}"`);
-  lines.push(`"Totaal items","${data.totals.items}"`);
+  lines.push(csvCell('PromptGuard rapport'));
+  lines.push(csvRow(['Organisatie', user.org.name]));
+  lines.push(csvRow(['Periode', `Q${quarter} ${year}`]));
+  lines.push(csvRow(['Start', data.period.start.toISOString()]));
+  lines.push(csvRow(['Eind', data.period.end.toISOString()]));
+  lines.push(csvRow(['Totaal events', data.totals.events]));
+  lines.push(csvRow(['Totaal items', data.totals.items]));
   lines.push('');
 
-  lines.push(`"AI-tool","Events","Items","Kritiek","Gevoelig","Laag","Geblokkeerd","Gewaarschuwd","Geregistreerd"`);
+  lines.push(csvRow(['AI-tool', 'Events', 'Items', 'Kritiek', 'Gevoelig', 'Laag', 'Geblokkeerd', 'Gewaarschuwd', 'Geregistreerd']));
   for (const t of data.byTool) {
-    lines.push([
-      csv(TOOL_LABELS[t.tool] ?? t.tool),
+    lines.push(csvRow([
+      TOOL_LABELS[t.tool] ?? t.tool,
       t.events, t.items, t.high, t.medium, t.low, t.blocked, t.warned, t.monitored,
-    ].map((v) => `"${v}"`).join(','));
+    ]));
   }
   lines.push('');
 
-  lines.push(`"Team","Events","Items","Kritiek","Gevoelig","Laag"`);
+  lines.push(csvRow(['Team', 'Events', 'Items', 'Kritiek', 'Gevoelig', 'Laag']));
   for (const t of data.byTeam) {
-    lines.push([csv(t.name), t.events, t.items, t.high, t.medium, t.low].map((v) => `"${v}"`).join(','));
+    lines.push(csvRow([t.name, t.events, t.items, t.high, t.medium, t.low]));
   }
   lines.push('');
 
-  lines.push(`"Datatype","Items","Events"`);
+  lines.push(csvRow(['Datatype', 'Items', 'Events']));
   for (const t of data.byType) {
-    lines.push([csv(TYPE_LABELS[t.type] ?? t.type), t.total, t.events].map((v) => `"${v}"`).join(','));
+    lines.push(csvRow([TYPE_LABELS[t.type] ?? t.type, t.total, t.events]));
   }
   lines.push('');
 
@@ -86,8 +107,4 @@ export async function GET(req: NextRequest) {
       'Content-Disposition': `attachment; filename="${filename}"`,
     },
   });
-}
-
-function csv(s: string): string {
-  return String(s).replace(/"/g, '""');
 }

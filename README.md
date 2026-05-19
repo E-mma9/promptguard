@@ -154,14 +154,84 @@ Vercel host de full app — signup, login, ingest API, dashboard.
 
 `build:vercel` script doet:
 1. `scripts/use-postgres.mjs` muteert `prisma/schema.prisma` provider naar `postgresql`
-2. `prisma generate` + `prisma db push` → tabellen in Postgres
-3. `next build`
+2. `prisma generate`
+3. `prisma migrate deploy` → past gecommitte migraties in `prisma/migrations/` toe (geen `db push --accept-data-loss` meer — schema-wijzigingen lopen via versie-gecontroleerde migraties, geen stille data-loss)
+4. `next build`
 
 Auto-deploy op elke `git push origin main`.
+
+> **Eenmalige baseline bij een BESTAANDE database** (een Neon-DB die eerder met `db push` is aangemaakt heeft nog geen migratie-historie). Draai één keer, met de productie-`DATABASE_URL` gezet:
+> ```sh
+> cd dashboard && npx prisma migrate resolve --applied 20240101000000_init
+> ```
+> Dit markeert de init-migratie als reeds toegepast zonder de SQL opnieuw te draaien. Een **nieuwe** lege Neon-DB heeft dit niet nodig — `migrate deploy` maakt de tabellen dan zelf aan. Lokaal blijft `npm run setup` SQLite via `db push` gebruiken; de migraties draaien alleen op Vercel/Postgres.
 
 ### 5. Eerste org
 
 `/signup` → maak admin-account → API-key staat op `/dashboard/settings` → in extension-instellingen plakken.
+
+---
+
+## Self-hosted deploy via Docker Compose (Proxmox / Hetzner)
+
+De aanbevolen weg zonder Vercel. Dezelfde stack draait lokaal op Proxmox (HTTP op het LAN) en later in productie op Hetzner (domein + automatische HTTPS). Eén `docker-compose.yml` in de repo-root: **app** (Next.js standalone) + **db** (PostgreSQL 16) + **caddy** (reverse proxy).
+
+### Vereisten
+- Docker + Docker Compose op de host. Op Proxmox: een **VM** met Docker, óf een **LXC** met nesting aan (`features: nesting=1`).
+
+### 1. Configureren
+
+```sh
+cp .env.example .env
+```
+
+Vul in `.env` minimaal in:
+- `POSTGRES_PASSWORD` — sterk willekeurig wachtwoord
+- `SESSION_SECRET` — `openssl rand -base64 48`
+- `NEXT_PUBLIC_APP_URL` — hoe gebruikers de app bereiken, bv. `http://192.168.1.50` (LAN-IP van de Proxmox-server). **Wordt in de build gebakken** — na wijzigen opnieuw builden.
+
+Voor de **Proxmox/LAN-fase** (plain HTTP) laat je staan:
+```
+SITE_ADDRESS=:80
+SESSION_COOKIE_SECURE=false
+```
+> `SESSION_COOKIE_SECURE=false` is hier verplicht: een `Secure`-cookie wordt door browsers geweigerd over `http://`, waardoor inloggen anders nooit blijft hangen.
+
+### 2. Starten
+
+```sh
+docker compose up -d --build
+```
+
+De app-container wacht tot Postgres gezond is, draait `prisma migrate deploy` (maakt alle tabellen incl. `RateLimit` aan — een verse DB heeft géén baseline-stap nodig), en start de server. Bereik de app op `http://<server-ip>/` → `/login`.
+
+Eerste org aanmaken: `/signup`. Een demo-seed is niet nodig in productie; wil je toch demodata, draai eenmalig in de app-container `npx tsx prisma/seed.ts` (let op: dit reset de demo-org).
+
+### 3. Later: overstap naar Hetzner (productie + HTTPS)
+
+Zelfde compose, alleen `.env` aanpassen op de Hetzner-server:
+- DNS: laat `promptguard.example.com` naar het Hetzner-IP wijzen, poorten 80+443 open.
+- In `.env`:
+  ```
+  SITE_ADDRESS=promptguard.example.com
+  SESSION_COOKIE_SECURE=true
+  NEXT_PUBLIC_APP_URL=https://promptguard.example.com
+  ```
+- `docker compose up -d --build`. Caddy regelt automatisch een Let's Encrypt-certificaat.
+
+Data verhuizen van Proxmox → Hetzner: `pg_dump` op het `db`-volume en `pg_restore` op de nieuwe host (de `pgdata` Docker-volume bevat de database).
+
+### Beheer
+
+| Actie | Commando |
+|---|---|
+| Logs | `docker compose logs -f app` |
+| Herstarten | `docker compose restart app` |
+| Updaten na `git pull` | `docker compose up -d --build` |
+| DB-backup | `docker compose exec db pg_dump -U promptguard promptguard > backup.sql` |
+| Stoppen | `docker compose down` (data blijft in volumes) |
+
+> `vercel.json` en `npm run build:vercel` blijven in de repo voor wie Vercel wil; de Docker-stack gebruikt ze niet.
 
 ---
 
@@ -284,7 +354,7 @@ Body: {
 }
 ```
 
-Flow: bearer-key → `prisma.organization.findUnique({where: {apiKey}})` → als team meegegeven, `upsert` Team → `prisma.detection.create()`. JSON-velden (`counts`, `severityCounts`) worden als string opgeslagen op SQLite (provider check), als JSONB op Postgres.
+Flow: IP-throttle op de onauth-pad → bearer-key → `prisma.organization.findUnique({where: {apiKey}})` → als team meegegeven, `upsert` Team → batch-validatie → `prisma.detection.createMany()`. `counts`/`severityCounts` worden als JSON-**string** in een `String`/`text`-kolom opgeslagen — identiek op SQLite én Postgres (bewust, voor provider-pariteit; geen `Json`/JSONB-type). Mislukte key-auth en rate-limits worden ge-audit-logd.
 
 `/api/ingest/health` is een simpele 200-OK voor de "Testen"-knop in extension-options.
 
@@ -309,7 +379,7 @@ Flow: bearer-key → `prisma.organization.findUnique({where: {apiKey}})` → als
 |---|---|
 | `db.ts` | Singleton `PrismaClient` (HMR-veilig in dev — checkt `globalThis`). |
 | `auth.ts` | JWT-helpers (`signSession`, `verifySession`, `getCurrentUser`), cookie-naam, expires. Wrapper rond `jose`. |
-| `queries.ts` | Alle complexe Prisma-queries voor de UI. Aggregaties per dag/tool/team/datatype. Telt JSON-velden (`counts`) door ze te parsen — op Postgres zou je dit met `jsonb_each` op SQL-niveau doen, maar voor MKB-volumes (~10k events/maand) volstaat client-side aggregeren. |
+| `queries.ts` | Alle complexe Prisma-queries voor de UI. Aggregaties per dag/tool/team/datatype. `counts` is een JSON-string in een `text`-kolom; tellingen gebeuren door te parsen in JS — voor MKB-volumes (~10k events/maand) volstaat client-side aggregeren (O(n) op event-volume; bekende plafond ~50-100k events/window). |
 | `format.ts` | Datum/getal-formatters — Nederlandse locale, dd-mm-jjjj, duizendpunten. |
 | `labels.ts` | Mensvriendelijke labels per `tool`/`type`/`severity` (`bsn` → "BSN-nummer", `chatgpt` → "ChatGPT", `high` → "Hoog risico"). Eén plek voor i18n later. |
 
@@ -331,6 +401,10 @@ Organization (apiKey UNIQUE — hoe extension authenticeert)
   ├── User[]       (admin | viewer, bcrypt password)
   ├── Team[]       (org+slug UNIQUE — voor managed-storage tags)
   └── Detection[]  ← waar alle events landen
+
+RateLimit (key PK — bv. "login:<ip>" / "ingest:<orgId>")
+  persistente fixed-window tellers, niet org-gebonden, fail-open
+  (login fail-closed), opportunistisch opgeschoond
 ```
 
 `Detection` is bewust schraal: `tool`, `source`, `action`, `counts` (JSON-string), `severityCounts`, `totalItems`, `highest`, `installId`, `characterCount`. Indexen op `(orgId, detectedAt)` plus de drie filter-dimensies (`tool`, `teamId`, `highest`). Alle relaties cascade-delete vanaf Organization — één DSAR-verzoek wist alles.
@@ -354,10 +428,10 @@ background.js  ── 3s debounce ──┐
                                  │ {tool, counts, severityCounts, installId, …}
                                  ▼
                        app/api/ingest/route.ts
-                                 │ apiKey → orgId
+                                 │ IP-throttle → apiKey → orgId
                                  │ team upsert (optioneel)
                                  ▼
-                       prisma.detection.create()
+                       prisma.detection.createMany()
                                  ▼
                        SQLite (lokaal) of Postgres/Neon (Vercel)
                                  ▲

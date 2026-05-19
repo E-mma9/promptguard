@@ -1,0 +1,4 @@
+# Production migrations target PostgreSQL (Neon on Vercel).
+# Local development uses SQLite via `prisma db push` (npm run setup) and does
+# not run these migrations.
+provider = "postgresql"

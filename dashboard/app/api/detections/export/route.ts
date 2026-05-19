@@ -3,10 +3,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { loadDetections } from '@/lib/queries';
 import { TOOL_LABELS, TYPE_LABELS, SEVERITY_LABELS, ACTION_LABELS } from '@/lib/labels';
 import { fmtDateTime } from '@/lib/format';
-
-function csv(s: string | number | null | undefined): string {
-  return String(s ?? '').replace(/"/g, '""');
-}
+import { csvRow, safeFilename } from '@/lib/csv';
 
 export async function GET(req: NextRequest) {
   const user = await getCurrentUser();
@@ -25,19 +22,7 @@ export async function GET(req: NextRequest) {
   });
 
   const lines: string[] = [];
-  lines.push(
-    [
-      'Tijd',
-      'Ernst',
-      'Tool',
-      'Team',
-      'Items',
-      'Soorten',
-      'Actie',
-    ]
-      .map((h) => `"${h}"`)
-      .join(',')
-  );
+  lines.push(csvRow(['Tijd', 'Ernst', 'Tool', 'Team', 'Items', 'Soorten', 'Actie']));
 
   for (const r of rows) {
     const types = Object.entries(r.counts)
@@ -45,24 +30,21 @@ export async function GET(req: NextRequest) {
       .join('; ');
 
     lines.push(
-      [
-        csv(fmtDateTime(r.detectedAt)),
-        csv(SEVERITY_LABELS[r.highest] ?? r.highest),
-        csv(TOOL_LABELS[r.tool] ?? r.tool),
-        csv(r.team?.name ?? ''),
+      csvRow([
+        fmtDateTime(r.detectedAt),
+        SEVERITY_LABELS[r.highest] ?? r.highest,
+        TOOL_LABELS[r.tool] ?? r.tool,
+        r.team?.name ?? '',
         r.totalItems,
-        csv(types),
-        csv(ACTION_LABELS[r.action] ?? r.action),
-      ]
-        .map((v) => `"${v}"`)
-        .join(',')
+        types,
+        ACTION_LABELS[r.action] ?? r.action,
+      ])
     );
   }
 
   // BOM for Excel compatibility with diacritics
   const body = '﻿' + lines.join('\n');
-  const orgSlug = user.org.name.replace(/\s+/g, '_');
-  const filename = `promptguard_detecties_${orgSlug}.csv`;
+  const filename = `promptguard_detecties_${safeFilename(user.org.name)}.csv`;
 
   return new Response(body, {
     headers: {

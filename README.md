@@ -10,6 +10,9 @@ promptguard/
 
 Dit is een interne app — geen marketingsite, geen publieke landingspagina. `/` redirect direct naar `/login`.
 
+> 📦 **Het prototype opzetten?** Volg de complete stap-voor-stap gids:
+> **[SETUP.md](SETUP.md)** — van lege Proxmox-server tot werkende detectie.
+
 ---
 
 ## Lokale snelstart

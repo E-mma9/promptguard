@@ -13,6 +13,9 @@ RUN apt-get update \
 # ---- dependencies ----
 FROM base AS deps
 COPY package.json package-lock.json ./
+# The prisma schema must exist before `npm ci`: the postinstall hook runs
+# `prisma generate`, which exits 1 without prisma/schema.prisma present.
+COPY prisma ./prisma
 RUN npm ci
 
 # ---- build ----

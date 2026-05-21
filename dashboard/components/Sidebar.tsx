@@ -11,6 +11,7 @@ const NAV = [
   { href: '/dashboard/tools', label: 'AI-tools', icon: IconBolt },
   { href: '/dashboard/types', label: 'Datatypes', icon: IconShield },
   { href: '/dashboard/reports', label: 'Rapportages', icon: IconReport },
+  { href: '/dashboard/audit', label: 'Audit-log', icon: IconAudit },
   { href: '/dashboard/deploy', label: 'Uitrol via IT', icon: IconDownload },
   { href: '/dashboard/settings', label: 'Instellingen', icon: IconCog },
 ];
@@ -107,6 +108,16 @@ function IconReport({ className, active }: { className?: string; active?: boolea
       <path d="M7 3h7l5 5v13a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z" />
       <path d="M14 3v5h5" />
       <path d="M9 13h6M9 17h4" />
+    </svg>
+  );
+}
+function IconAudit({ className, active }: { className?: string; active?: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} {...baseProps(active)}>
+      <path d="M8 3h8a1 1 0 011 1v16a1 1 0 01-1 1H8a1 1 0 01-1-1V4a1 1 0 011-1z" />
+      <path d="M10 3.5h4v2h-4z" />
+      <path d="M9.5 11l1.6 1.6L14.5 9" />
+      <path d="M9.5 16h5" />
     </svg>
   );
 }

@@ -98,3 +98,23 @@ model RateLimit {
 
   @@index([resetAt])
 }
+
+// Durable, queryable audit trail of security-relevant events: authentication,
+// admin actions, access denials. Persisted to the database (not only stdout)
+// so the admin-action logging required by NEN 7510 / ISO 27001 survives
+// serverless restarts and is verifiable. orgId is null for pre-auth events
+// (e.g. a failed login before the organisation is known).
+model AuditLog {
+  id        String   @id @default(cuid())
+  type      String   // e.g. auth.login.success, api.apikey.regenerated
+  orgId     String?
+  userId    String?
+  email     String?
+  ipAddress String?
+  userAgent String?
+  details   String?  // JSON string with event-specific context
+  createdAt DateTime @default(now())
+
+  @@index([orgId, createdAt])
+  @@index([type])
+}

@@ -408,3 +408,13 @@ export async function loadQuarterly(orgId: string, year: number, quarter: number
     byType,
   };
 }
+
+/** Most-recent audit-log entries for an organisation. */
+export async function loadAuditLog(orgId: string, opts: { take?: number } = {}) {
+  const take = Math.min(250, Math.max(1, opts.take ?? 100));
+  return prisma.auditLog.findMany({
+    where: { orgId },
+    orderBy: { createdAt: 'desc' },
+    take,
+  });
+}

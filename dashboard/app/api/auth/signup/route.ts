@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { hashPassword, createSession, setSessionCookie, generateApiKey } from '@/lib/auth';
+import { clientIp } from '@/lib/request';
+import { auditLog } from '@/lib/audit';
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null) as {
@@ -67,6 +69,15 @@ export async function POST(req: NextRequest) {
 
   const token = await createSession(result.user.id);
   await setSessionCookie(token);
+
+  auditLog({
+    type: 'auth.signup',
+    userId: result.user.id,
+    orgId: result.org.id,
+    email,
+    ipAddress: clientIp(req),
+    userAgent: req.headers.get('user-agent') ?? undefined,
+  });
 
   return NextResponse.json({ ok: true, redirectTo: '/dashboard/welcome' });
 }

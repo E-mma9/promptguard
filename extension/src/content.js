@@ -218,11 +218,62 @@
   // Tracks the last reported scan-signature per element to avoid duplicates
   // when the same prompt sits in the textarea while user keeps typing.
   const lastSignature = new WeakMap();
+  // Per-element hash of the EXACT text the user explicitly chose to send anyway
+  // (warn mode). Keyed on content, not on the scan signature: two different
+  // sensitive prompts that happen to share the same type/count profile must NOT
+  // bypass the warning. Any edit changes the hash and re-triggers it.
+  const acknowledged = new WeakMap();
   let inputDebounce = null;
 
   function scanSignature(result) {
     const counts = result.counts || {};
     return Object.keys(counts).sort().map((k) => k + ':' + counts[k]).join('|');
+  }
+
+  // djb2 — fast, non-cryptographic. Used only to fingerprint acknowledged
+  // content locally; never transmitted.
+  function hashText(s) {
+    let h = 5381;
+    for (let i = 0; i < s.length; i++) h = (((h << 5) + h) + s.charCodeAt(i)) | 0;
+    return s.length + ':' + h;
+  }
+
+  // Per-site selector for the real "send" button. Clicking it is far more
+  // reliable than a synthetic Enter (which is untrusted and ignored by some
+  // sites). `tool` is resolved from location.hostname at startup.
+  const SEND_BUTTON_SELECTORS = {
+    chatgpt: 'button[data-testid="send-button"], button[aria-label*="Send" i]',
+    claude: 'button[aria-label="Send message" i], button[aria-label*="Send" i]',
+    gemini: 'button.send-button, button[aria-label*="Send" i], button[aria-label*="Versturen" i]',
+    copilot: 'button[data-testid="submit-button"], button[aria-label*="Submit" i], button[aria-label*="Send" i]',
+    mistral: 'button[type="submit"], button[aria-label*="Send" i]',
+    perplexity: 'button[aria-label*="Submit" i], button[type="submit"]',
+    you: 'button[type="submit"], button[aria-label*="Send" i]',
+  };
+
+  function clickSendButton() {
+    const sel = SEND_BUTTON_SELECTORS[tool];
+    if (!sel) return false;
+    let btn = null;
+    try { btn = document.querySelector(sel); } catch (e) { return false; }
+    if (btn && !btn.disabled && btn.offsetParent !== null) {
+      btn.click();
+      return true;
+    }
+    return false;
+  }
+
+  // Submit the prompt the user just confirmed: prefer the site's real send
+  // button; fall back to a synthetic Enter (our capture-phase keydown listener
+  // sees the acknowledged content and lets it pass through). Either way the
+  // acknowledged hash also lets the user press Enter manually.
+  function submitNow(target) {
+    if (clickSendButton()) return;
+    if (!target) return;
+    try { target.focus(); } catch (e) {}
+    const opts = { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true, cancelable: true };
+    target.dispatchEvent(new KeyboardEvent('keydown', opts));
+    target.dispatchEvent(new KeyboardEvent('keyup', opts));
   }
 
   function handleInput(target) {
@@ -241,24 +292,42 @@
     reportDetection(result, 'submit', text.length);
 
     if (!shouldAct(result)) return;
+    if (acknowledged.get(target) === hashText(text)) return; // user already chose to send this exact content
     if (bannerEl) return; // already showing
 
-    if (settings.mode === 'block' || settings.mode === 'warn') {
+    function clearInput() {
+      if (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT') {
+        target.value = '';
+        target.dispatchEvent(new Event('input', { bubbles: true }));
+      } else if (target.getAttribute && target.getAttribute('contenteditable') === 'true') {
+        target.textContent = '';
+        target.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    }
+
+    if (settings.mode === 'block') {
+      // Hard block: no way to proceed. Mirror the paste-block UX.
+      showBanner(result, null, clearInput);
+      if (bannerEl) {
+        const proc = bannerEl.querySelector('.pg-btn-proceed');
+        if (proc) proc.remove();
+        const cancel = bannerEl.querySelector('.pg-btn-cancel');
+        if (cancel) cancel.textContent = 'Sluiten';
+      }
+      return;
+    }
+
+    if (settings.mode === 'warn') {
       // We can't undo what was already typed, but we CAN warn the user
-      // before they submit.
+      // before they submit. On "Toch versturen" we remember this exact
+      // content as acknowledged and re-fire the submit so it actually sends.
       showBanner(
         result,
-        () => { /* user proceeds — leave text intact */ },
         () => {
-          // user cancelled — clear the input so nothing is sent
-          if (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT') {
-            target.value = '';
-            target.dispatchEvent(new Event('input', { bubbles: true }));
-          } else if (target.getAttribute && target.getAttribute('contenteditable') === 'true') {
-            target.textContent = '';
-            target.dispatchEvent(new Event('input', { bubbles: true }));
-          }
-        }
+          acknowledged.set(target, hashText(text));
+          submitNow(target);
+        },
+        clearInput
       );
     }
   }
@@ -282,6 +351,8 @@
     if (!text || text.length < 4) return;
     const result = Detector.scan(text);
     if (result.total === 0) return;
+
+    if (acknowledged.get(target) === hashText(text)) return; // user confirmed this exact content — let it submit
 
     if (shouldAct(result) && (settings.mode === 'warn' || settings.mode === 'block')) {
       // Stop ChatGPT/Claude/etc. from submitting before the user has decided.

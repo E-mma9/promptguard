@@ -1,33 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { verifyPassword, createSession, setSessionCookie } from '@/lib/auth';
-
-const loginAttempts = new Map<string, { count: number; resetAt: number }>();
+import { isRateLimited, penalizeRateLimit, resetRateLimit } from '@/lib/ratelimit';
+import { clientIp } from '@/lib/request';
+import { auditLog } from '@/lib/audit';
 
 const RATE_LIMIT_MAX = 10;
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 
 export async function POST(req: NextRequest) {
-  const ip =
-    req.headers.get('x-forwarded-for') ||
-    req.headers.get('x-real-ip') ||
-    'unknown';
+  const ip = clientIp(req);
+  const userAgent = req.headers.get('user-agent') ?? undefined;
+  const rlKey = `login:${ip}`;
 
-  const now = Date.now();
-  const entry = loginAttempts.get(ip);
-
-  if (entry) {
-    if (now < entry.resetAt) {
-      if (entry.count >= RATE_LIMIT_MAX) {
-        return NextResponse.json(
-          { error: 'Te veel pogingen, probeer het over 15 minuten opnieuw' },
-          { status: 429 }
-        );
-      }
-    } else {
-      // Window has expired, reset
-      loginAttempts.delete(ip);
-    }
+  // Fail CLOSED: a DB error must not silently disable brute-force throttling
+  // on the authentication path.
+  if (await isRateLimited(rlKey, RATE_LIMIT_MAX, { failClosed: true })) {
+    auditLog({ type: 'auth.login.rate_limited', ipAddress: ip, userAgent });
+    return NextResponse.json(
+      { error: 'Te veel pogingen, probeer het over 15 minuten opnieuw' },
+      { status: 429 }
+    );
   }
 
   const body = await req.json().catch(() => null) as { email?: string; password?: string } | null;
@@ -38,29 +31,20 @@ export async function POST(req: NextRequest) {
   }
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) {
-    // Increment attempt counter on failed login
-    const current = loginAttempts.get(ip);
-    if (current && now < current.resetAt) {
-      current.count += 1;
-    } else {
-      loginAttempts.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    }
+    await penalizeRateLimit(rlKey, RATE_LIMIT_WINDOW_MS);
+    auditLog({ type: 'auth.login.failed', email, ipAddress: ip, userAgent, details: { reason: 'no_such_user' } });
     return NextResponse.json({ error: 'invalid credentials' }, { status: 401 });
   }
   const ok = await verifyPassword(password, user.passwordHash);
   if (!ok) {
-    // Increment attempt counter on failed login
-    const current = loginAttempts.get(ip);
-    if (current && now < current.resetAt) {
-      current.count += 1;
-    } else {
-      loginAttempts.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    }
+    await penalizeRateLimit(rlKey, RATE_LIMIT_WINDOW_MS);
+    auditLog({ type: 'auth.login.failed', email, userId: user.id, orgId: user.orgId, ipAddress: ip, userAgent, details: { reason: 'bad_password' } });
     return NextResponse.json({ error: 'invalid credentials' }, { status: 401 });
   }
 
-  // Successful login — clear rate limit counter for this IP
-  loginAttempts.delete(ip);
+  // Successful login — clear the rate-limit counter for this IP.
+  await resetRateLimit(rlKey);
+  auditLog({ type: 'auth.login.success', email, userId: user.id, orgId: user.orgId, ipAddress: ip, userAgent });
 
   const token = await createSession(user.id);
   await setSessionCookie(token);

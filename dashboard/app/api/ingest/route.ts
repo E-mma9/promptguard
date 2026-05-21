@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateApiKey } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { consumeRateLimit, isRateLimited, penalizeRateLimit } from '@/lib/ratelimit';
+import { clientIp } from '@/lib/request';
+import { auditLog } from '@/lib/audit';
 
 const ALLOWED_TOOLS = new Set([
   'chatgpt', 'claude', 'gemini', 'copilot', 'mistral', 'perplexity', 'you', 'unknown',
@@ -8,20 +11,8 @@ const ALLOWED_TOOLS = new Set([
 const ALLOWED_SEVERITIES = new Set(['high', 'medium', 'low']);
 const ALLOWED_ACTIONS = new Set(['monitored', 'warned', 'blocked']);
 
-// Per-org in-memory rate limiter (resets every 60 seconds per org)
-const orgRateLimits = new Map<string, { count: number; resetAt: number }>();
-
-function checkOrgRateLimit(orgId: string, maxPerMinute = 60): boolean {
-  const now = Date.now();
-  const entry = orgRateLimits.get(orgId);
-  if (!entry || entry.resetAt < now) {
-    orgRateLimits.set(orgId, { count: 1, resetAt: now + 60_000 });
-    return true;
-  }
-  if (entry.count >= maxPerMinute) return false;
-  entry.count++;
-  return true;
-}
+// Per-org rate limit: 60 requests/minute, persisted across serverless instances.
+const ORG_MAX_PER_MINUTE = 60;
 
 // CORS: only allow browser extensions and explicitly configured origins.
 // Extension background scripts send no origin header at all; content scripts
@@ -73,10 +64,28 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'forbidden' }, { status: 403, headers: corsHeaders });
   }
 
-  const org = await authenticateApiKey(req.headers.get('authorization'));
-  if (!org) return NextResponse.json({ error: 'unauthorized' }, { status: 401, headers: corsHeaders });
+  // Brute-force protection on the UNAUTHENTICATED path: an attacker guessing
+  // API keys is throttled by source IP before any key check happens, and every
+  // failed attempt is audited. (Fail-open: telemetry availability outweighs
+  // strictness here, and key entropy already makes guessing infeasible.)
+  const ip = clientIp(req);
+  const userAgent = req.headers.get('user-agent') ?? undefined;
+  const authKey = `ingest-auth:${ip}`;
+  if (await isRateLimited(authKey, 20)) {
+    auditLog({ type: 'access.denied', ipAddress: ip, userAgent, details: { endpoint: 'ingest', reason: 'auth_rate_limited' } });
+    return NextResponse.json({ error: 'too many attempts' }, { status: 429, headers: corsHeaders });
+  }
 
-  if (!checkOrgRateLimit(org.id)) {
+  const org = await authenticateApiKey(req.headers.get('authorization'));
+  if (!org) {
+    await penalizeRateLimit(authKey, 15 * 60 * 1000);
+    auditLog({ type: 'access.denied', ipAddress: ip, userAgent, details: { endpoint: 'ingest', reason: 'invalid_api_key' } });
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401, headers: corsHeaders });
+  }
+
+  const rl = await consumeRateLimit(`ingest:${org.id}`, ORG_MAX_PER_MINUTE, 60_000);
+  if (!rl.allowed) {
+    auditLog({ type: 'api.ingest.rate_limited', orgId: org.id, ipAddress: ip, userAgent });
     return NextResponse.json({ error: 'rate limit exceeded' }, { status: 429, headers: corsHeaders });
   }
 

@@ -1,0 +1,10 @@
+# Shell scripts and container/config files must stay LF — CRLF breaks them
+# inside the Linux Docker image (e.g. "/bin/sh^M: bad interpreter").
+*.sh            text eol=lf
+docker-entrypoint.sh text eol=lf
+Dockerfile      text eol=lf
+*.yml           text eol=lf
+*.yaml          text eol=lf
+Caddyfile       text eol=lf
+*.toml          text eol=lf
+*.mjs           text eol=lf

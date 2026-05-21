@@ -88,13 +88,18 @@ export default function SignupPage() {
               <input
                 type="password"
                 required
-                minLength={8}
+                minLength={12}
+                pattern={"(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[!@#$%^&*()_+\\-=\\[\\]{}|;':\",.<>?/]).{12,}"}
+                title="Minimaal 12 tekens, met een hoofdletter, een kleine letter, een cijfer en een speciaal teken."
                 autoComplete="new-password"
                 className="pg-input"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Minimaal 8 tekens"
+                placeholder="Minimaal 12 tekens"
               />
+              <span className="mt-1.5 block text-xs text-ink-500">
+                Minimaal 12 tekens, met een hoofdletter, een kleine letter, een cijfer en een speciaal teken.
+              </span>
             </label>
 
             <label className="flex items-start gap-2.5 mt-2 cursor-pointer">

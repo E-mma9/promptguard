@@ -87,3 +87,14 @@ model Detection {
   @@index([orgId, teamId])
   @@index([orgId, highest])
 }
+
+// Fixed-window rate-limit counters. Persisted (not in-memory) so the limit
+// holds across Vercel serverless instances. `key` is e.g. "login:<ip>" or
+// "ingest:<orgId>". Rows are short-lived and opportunistically pruned.
+model RateLimit {
+  key     String   @id
+  count   Int      @default(0)
+  resetAt DateTime
+
+  @@index([resetAt])
+}

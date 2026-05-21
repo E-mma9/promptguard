@@ -1,0 +1,6 @@
+# SITE_ADDRESS=:80               -> plain HTTP on the LAN (Proxmox phase)
+# SITE_ADDRESS=promptguard.tld   -> automatic Let's Encrypt HTTPS (Hetzner)
+{$SITE_ADDRESS} {
+	encode zstd gzip
+	reverse_proxy app:3000
+}

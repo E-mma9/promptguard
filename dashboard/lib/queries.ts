@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from './db';
 import { quarterRange } from './format';
 
@@ -120,7 +121,9 @@ export async function loadOverview(orgId: string, windowSpec: WindowSpec = defau
     }
   }
 
-  const mostExposedTeam = byTeam[0] ?? null;
+  // The KPI must highlight a real team — never the "Geen team" (untagged)
+  // bucket, which would otherwise dominate when IT hasn't rolled out team tags.
+  const mostExposedTeam = byTeam.find((t) => t.id !== null) ?? null;
 
   return {
     eventCount,
@@ -150,7 +153,7 @@ export async function loadDetections(orgId: string, opts: { take?: number; skip?
   const take = Math.min(500, Math.max(1, opts.take ?? 50));
   const skip = Math.max(0, opts.skip ?? 0);
 
-  const where: Record<string, unknown> = { orgId };
+  const where: Prisma.DetectionWhereInput = { orgId };
 
   if (opts.tool !== undefined && opts.tool !== '') {
     // Silently ignore invalid values — prevents 500s if called with unexpected input.

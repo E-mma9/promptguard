@@ -15,9 +15,8 @@ function secret(): Uint8Array {
 }
 
 export async function hashPassword(plain: string): Promise<string> {
-  // Cost 12 matches the claim made on /security and in the DPA — earlier
-  // versions used cost 10, which understated the security posture relative
-  // to the published documentation.
+  // Cost 12 (matches the README security claim). bcrypt.compare reads the cost
+  // from the stored hash, so existing cost-10 hashes keep verifying.
   return bcrypt.hash(plain, 12);
 }
 
@@ -34,13 +33,25 @@ export async function createSession(userId: string): Promise<string> {
   return token;
 }
 
+// Whether the session cookie gets the Secure flag.
+//
+// Default: on in production, off in development. A Secure cookie is rejected
+// by browsers over plain HTTP, so a self-hosted LAN deployment served over
+// http:// MUST set SESSION_COOKIE_SECURE=false (otherwise login silently never
+// persists). When the deployment moves behind HTTPS (e.g. Caddy on Hetzner),
+// set it to true / unset it.
+function cookieSecure(): boolean {
+  const override = process.env.SESSION_COOKIE_SECURE;
+  if (override === 'true') return true;
+  if (override === 'false') return false;
+  return process.env.NODE_ENV === 'production';
+}
+
 export async function setSessionCookie(token: string) {
   const c = await cookies();
   c.set(COOKIE_NAME, token, {
     httpOnly: true,
-    // secure is intentionally false in development (localhost doesn't use HTTPS);
-    // in production the flag is required so the cookie is never sent over plain HTTP.
-    secure: process.env.NODE_ENV === 'production',
+    secure: cookieSecure(),
     sameSite: 'strict', // strict prevents the cookie from being sent on any cross-site request (stronger CSRF protection than 'lax')
     path: '/',
     maxAge: SESSION_TTL_SECONDS,

@@ -1,0 +1,12 @@
+{
+  "name": "promptguard-extension",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PromptGuard browser extension — Manifest V3, no build step.",
+  "scripts": {
+    "test": "node src/detector.test.js && node src/content.test.js"
+  },
+  "devDependencies": {
+    "jsdom": "^25.0.1"
+  }
+}

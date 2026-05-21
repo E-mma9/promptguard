@@ -50,9 +50,9 @@
     // ChatGPT/Claude use ProseMirror: the contenteditable attribute sits on
     // the editor root, but paste/input/keydown events fire on an inner node
     // (e.g. a <p>). isContentEditable is inherited, so it is true on the
-    // inner node too — checking the attribute alone misses every paste.
+    // inner node too. closest() is the robust fallback for the same case.
     if (el.isContentEditable) return true;
-    if (el.getAttribute && el.getAttribute('contenteditable') === 'true') return true;
+    if (el.closest && el.closest('[contenteditable="true"], [contenteditable=""]')) return true;
     return false;
   }
 

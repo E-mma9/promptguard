@@ -29,11 +29,12 @@ export default function PrivacyPage() {
               1. Wie zijn wij?
             </h2>
             <p className="mt-3 text-gray-600 leading-relaxed">
-              PromptGuard is een product van PromptGuard B.V., gevestigd in Nederland.
-              Wij bieden een browserextensie en een bijbehorend dashboard waarmee
-              organisaties kunnen monitoren welke categorieën gevoelige informatie
-              medewerkers invoeren in publieke AI-tools zoals ChatGPT, Claude, Gemini
-              en Copilot.
+              PromptGuard wordt aangeboden door <strong>PromptGuard B.V. in oprichting</strong> —
+              tot het moment van notariële oprichting handelend onder de naam PromptGuard, een
+              Nederlandse eenmanszaak, KvK-nummer wordt na inschrijving ingevuld. Wij bieden een
+              browserextensie en een bijbehorend dashboard waarmee organisaties kunnen monitoren
+              welke categorieën gevoelige informatie medewerkers invoeren in publieke AI-tools
+              zoals ChatGPT, Claude, Gemini en Copilot.
             </p>
             <p className="mt-3 text-gray-600 leading-relaxed">
               Contactgegevens:{' '}
@@ -221,6 +222,44 @@ export default function PrivacyPage() {
             </p>
           </section>
 
+          {/* 7b. Voor medewerkers — Klant-OR-relatie */}
+          <section>
+            <h2 className="text-xl font-semibold text-gray-900">
+              7b. Voor medewerkers waarvan de werkgever PromptGuard inzet
+            </h2>
+            <p className="mt-3 text-gray-600 leading-relaxed">
+              Als u medewerker bent van een organisatie die PromptGuard heeft
+              ingezet, dan is uw werkgever de verwerkingsverantwoordelijke. Wij
+              treden uitsluitend op als verwerker. Drie zaken die u over uw eigen
+              positie zou moeten weten:
+            </p>
+            <ul className="mt-3 list-disc list-inside space-y-2 text-gray-600">
+              <li>
+                <strong>Uw werkgever ziet aggregaat-statistieken</strong>, geen
+                prompttekst. Uw werkgever kan niet teruglezen wat u in ChatGPT
+                of vergelijkbare AI-tools heeft geplakt.
+              </li>
+              <li>
+                <strong>Een detection-event is geen incident.</strong> Per
+                detectie wordt alleen de <em>categorie</em> en <em>severity</em>
+                geregistreerd. Niet de inhoud. Niet een waardeoordeel over uw
+                gedrag.
+              </li>
+              <li>
+                <strong>De ondernemingsraad heeft instemmingsrecht.</strong> Op
+                grond van <strong>artikel 27 lid 1 onder l van de Wet op de
+                ondernemingsraden</strong> heeft de OR van uw werkgever
+                instemming moeten geven voor de inzet van PromptGuard. Als u
+                hierover vragen heeft, vraag bij uw eigen OR of FG na.
+              </li>
+            </ul>
+            <p className="mt-4 text-gray-600 leading-relaxed">
+              Voor uitoefening van uw betrokkenenrechten (inzage, rectificatie,
+              wissing) wendt u zich tot uw werkgever — zij zijn voor uw data de
+              verwerkingsverantwoordelijke. Wij ondersteunen daarbij.
+            </p>
+          </section>
+
           {/* 8. Cookies */}
           <section>
             <h2 className="text-xl font-semibold text-gray-900">
@@ -257,8 +296,9 @@ export default function PrivacyPage() {
               uw gegevens? Neem contact op via:
             </p>
             <address className="mt-3 not-italic text-gray-600 leading-relaxed">
-              PromptGuard B.V.<br />
+              PromptGuard B.V. in oprichting<br />
               Nederland<br />
+              KvK-nummer: [in te vullen]<br />
               <a
                 href="mailto:info@promptguard.nl"
                 className="text-indigo-600 underline hover:text-indigo-800"

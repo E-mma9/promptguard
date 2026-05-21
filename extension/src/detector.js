@@ -7,6 +7,10 @@
  * Detectors are designed to minimise false positives by validating
  * checksums (BSN/RSIN elfproef, IBAN mod-97, credit card Luhn) wherever
  * a checksum exists.
+ *
+ * DETECTOR_VERSION is the semver of the ruleset. It is included in every
+ * ingest payload so an auditor can reconstruct exactly which rules ran
+ * at the time of detection. Bump on any rule change.
  */
 
 (function (root, factory) {
@@ -17,6 +21,8 @@
   }
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
+
+  const DETECTOR_VERSION = '1.0.0';
 
   const Severity = {
     HIGH: 'high',
@@ -476,6 +482,7 @@
   }
 
   return {
+    version: DETECTOR_VERSION,
     scan,
     labelFor,
     Severity,

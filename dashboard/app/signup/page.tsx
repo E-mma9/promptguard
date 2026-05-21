@@ -105,7 +105,15 @@ export default function SignupPage() {
                 className="mt-0.5 w-4 h-4 rounded border-ink-300 text-brand-700 focus:ring-brand-500"
               />
               <span className="text-sm text-ink-700 leading-relaxed">
-                Ik ga akkoord met de voorwaarden van deze interne PromptGuard-omgeving.
+                Ik ga akkoord met de{' '}
+                <Link href="/terms" target="_blank" className="text-brand-700 font-semibold hover:underline">
+                  algemene voorwaarden
+                </Link>{' '}
+                en de{' '}
+                <Link href="/privacy" target="_blank" className="text-brand-700 font-semibold hover:underline">
+                  privacyverklaring
+                </Link>{' '}
+                van PromptGuard.
               </span>
             </label>
 
@@ -142,14 +150,36 @@ export default function SignupPage() {
         </div>
         <div className="relative space-y-8">
           <h2 className="text-2xl font-semibold tracking-tight leading-tight">
-            In 10 minuten weet je wat je medewerkers werkelijk in ChatGPT plakken.
+            Het bewijsmateriaal dat de AI Act, AVG en NIS2 u nu al verplichten te kunnen tonen.
           </h2>
           <ul className="space-y-3 text-ink-300">
-            <Bullet>Detectie 100% lokaal in de browser — geen prompttekst verlaat de organisatie</Bullet>
-            <Bullet>Automatische uitrol via Microsoft Intune, Group Policy, of Jamf</Bullet>
-            <Bullet>BSN, IBAN, KvK, salarisstroken, broncode — herkent NL-systemen out-of-the-box</Bullet>
-            <Bullet>AI Act-rapportage per kwartaal — direct exporteerbaar voor compliance</Bullet>
+            <Bullet>
+              <strong className="text-white">AI Act art. 4</strong> — sinds 2 feb 2025 verplicht voor elke organisatie die AI inzet.
+              PromptGuard registreert het tool-gebruik dat u moet kunnen aantonen.
+            </Bullet>
+            <Bullet>
+              <strong className="text-white">AVG art. 24/32</strong> — verantwoordingsplicht en passende technische maatregelen.
+              PromptGuard ís de maatregel én levert het bewijs ervan.
+            </Bullet>
+            <Bullet>
+              <strong className="text-white">NIS2 / Cyberbeveiligingswet</strong> — voor essential en important entities.
+              Inventarisatie van SaaS-AI-tools en cyberhygiëne-training.
+            </Bullet>
+            <Bullet>
+              <strong className="text-white">Zorgsector (NEN 7510, Wabvpz)</strong> — controls-mapping per maatregel beschikbaar.
+              EU-data-residency (Frankfurt), geen US-subverwerkers.
+            </Bullet>
+            <Bullet>
+              Detectie 100% lokaal — prompttekst verlaat browser nooit. Auditbaar via DevTools.
+            </Bullet>
           </ul>
+          <Link
+            href="/wettelijk-kader"
+            target="_blank"
+            className="inline-block text-sm text-brand-300 underline hover:text-brand-200"
+          >
+            Lees het volledige juridische kader →
+          </Link>
         </div>
       </div>
     </div>

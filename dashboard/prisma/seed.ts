@@ -114,7 +114,7 @@ async function main() {
   });
   console.log(`  created organization "${org.name}"`);
 
-  const passwordHash = await bcrypt.hash('demo1234', 10);
+  const passwordHash = await bcrypt.hash('demo1234', 12);
   await prisma.user.create({
     data: {
       orgId: org.id,

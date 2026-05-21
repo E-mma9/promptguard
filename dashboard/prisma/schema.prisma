@@ -76,6 +76,10 @@ model Detection {
   highest        String  // high | medium | low
   characterCount Int
 
+  // Semver of the detector ruleset that produced this event.
+  // Enables an auditor to reconstruct exactly which rules ran at detection time.
+  detectorVersion String  @default("unknown")
+
   detectedAt DateTime @default(now())
 
   @@index([orgId, detectedAt])

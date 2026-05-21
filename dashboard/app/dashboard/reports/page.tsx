@@ -39,7 +39,7 @@ export default async function ReportsPage({
     <div>
       <PageHeader
         title="Rapportages"
-        description="Exporteer per kwartaal een samenvatting voor AI Act-compliance, AVG-audit of cyberverzekeraar."
+        description="Exporteer per kwartaal een aggregaat-samenvatting ter onderbouwing van uw AI Act-deployer-inventaris, AVG-verwerkingsregister en cyberverzekeringsvragenlijst."
       />
 
       <div className="px-8 py-7 space-y-6">
@@ -177,7 +177,7 @@ export default async function ReportsPage({
           <p className="text-ink-300 text-sm">
             Aggregaten van alle detection events in dit kwartaal: per AI-tool, per team en per datatype.{' '}
             <strong className="text-white">Geen prompttekst</strong> &mdash; alleen tellingen.{' '}
-            Dit rapport is bedoeld voor uw AI Act-register, AVG-verantwoordingsplicht en jaarlijkse cyberverzekeringsvragenlijst.
+            Dit rapport is bedoeld als ondersteunend bewijs bij uw AI Act-deployer-inventaris, AVG-verantwoordingsplicht en jaarlijkse cyberverzekeringsvragenlijst. PromptGuard is geen vervanging van uw eigen juridische beoordeling of DPIA.
           </p>
         </section>
       </div>

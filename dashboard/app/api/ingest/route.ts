@@ -62,6 +62,7 @@ type IngestEvent = {
   characterCount?: number;
   action?: string;
   detectedAt?: string;
+  detectorVersion?: string;
 };
 
 export async function POST(req: NextRequest) {
@@ -178,6 +179,11 @@ function normaliseEvent(
       ? e.installId
       : 'anon';
 
+  const detectorVersion =
+    typeof e.detectorVersion === 'string' && /^[a-zA-Z0-9.\-]{1,32}$/.test(e.detectorVersion)
+      ? e.detectorVersion
+      : 'unknown';
+
   // Validate slug against already-lowercased value
   const teamSlug = typeof e.team === 'string' ? e.team.trim().toLowerCase() : '';
   const teamId = teamSlug && /^[a-z0-9][a-z0-9-]{0,40}$/.test(teamSlug)
@@ -196,6 +202,7 @@ function normaliseEvent(
     totalItems,
     highest,
     characterCount,
+    detectorVersion,
     ...(detectedAt ? { detectedAt } : {}),
   };
 }

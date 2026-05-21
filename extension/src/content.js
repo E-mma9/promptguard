@@ -82,6 +82,7 @@
           total: result.total,
           highest: result.highest,
           characterCount,
+          detectorVersion: (window.PromptGuardDetector && window.PromptGuardDetector.version) || 'unknown',
           action: shouldAct(result)
             ? (ACTION_BY_MODE[settings.mode] || 'monitored')
             : 'monitored',
@@ -100,6 +101,8 @@
     bannerEl = document.createElement('div');
     bannerEl.className = 'pg-banner';
     bannerEl.setAttribute('role', 'dialog');
+    bannerEl.setAttribute('aria-modal', 'true');
+    bannerEl.setAttribute('aria-labelledby', 'pg-banner-title');
     bannerEl.setAttribute('aria-label', 'PromptGuard waarschuwing');
 
     const labelByType = {
@@ -132,7 +135,7 @@
       <div class="pg-banner-inner pg-sev-${safeSeverity}">
         <div class="pg-banner-icon" aria-hidden="true">!</div>
         <div class="pg-banner-body">
-          <div class="pg-banner-title">PromptGuard heeft <strong>${safeTotal}</strong> ${sevLabel}e item(s) gedetecteerd</div>
+          <div class="pg-banner-title" id="pg-banner-title">PromptGuard heeft <strong>${safeTotal}</strong> ${sevLabel}e item(s) gedetecteerd</div>
           <div class="pg-banner-detail">${escapeHtml(items)}</div>
           <div class="pg-banner-help">Deze data zou bij <strong>${escapeHtml(toolLabel(tool))}</strong> terechtkomen.</div>
         </div>

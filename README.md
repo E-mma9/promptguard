@@ -1,6 +1,6 @@
 # PromptGuard
 
-Shadow AI monitor voor het Nederlandse MKB. Detecteert lokaal in de browser welke gevoelige data medewerkers in ChatGPT, Claude, Gemini, Copilot, Mistral en Perplexity plakken — en levert AVG-/AI Act-rapportage uit de doos.
+Shadow AI monitor voor het Nederlandse MKB. Detecteert lokaal in de browser welke gevoelige datacategorieën medewerkers in ChatGPT, Claude, Gemini, Copilot, Mistral en Perplexity invoeren — en levert exporteerbare aggregaat-rapportage ter onderbouwing van AVG-verantwoordingsplicht en AI Act-deployer-inventarisatie. EU-data-residency (Frankfurt), ontworpen volgens AVG-data-minimalisatie en NEN 7510/ISO 27001-principes.
 
 ```
 promptguard/
@@ -297,7 +297,7 @@ Flow: bearer-key → `prisma.organization.findUnique({where: {apiKey}})` → als
 | `dashboard/tools/` | Per-tool uitsplitsing (welk percentage gaat naar ChatGPT vs Claude vs Gemini, met datatype-distributie per tool). |
 | `dashboard/teams/` | Per-team uitsplitsing (alleen zichtbaar als IT teams heeft uitgerold via managed storage). |
 | `dashboard/types/` | Per-datatype uitsplitsing (welke teams/tools zijn de zwaarste BSN-pasters?). |
-| `dashboard/reports/` | Kwartaalrapport-generator — geeft AI Act-vereiste samenvatting + downloads naar `/api/reports/quarterly`. |
+| `dashboard/reports/` | Kwartaalrapport-generator — geeft aggregaat-samenvatting ter onderbouwing van uw AI Act-deployer-inventaris + downloads naar `/api/reports/quarterly`. |
 | `dashboard/settings/` | Toont organisatie-API-key (regenerate-knop), beheer team-tags. |
 | `dashboard/deploy/` | **Genereert IT-uitroltemplates** — Microsoft Intune JSON, Group Policy `.reg`, Firefox `policies.json`, Jamf macOS plist. Allemaal vooraf ingevuld met de juiste dashboard-URL en API-key. Pure client-side template-substitutie. |
 | `dashboard/welcome/` | Onboarding na signup: 3-stappen-checklist (extension installeren, API-key plakken, eerste detectie genereren). |
@@ -370,7 +370,7 @@ background.js  ── 3s debounce ──┐
 
 ## De privacy-grens
 
-Eén regel houdt het hele ontwerp overeind: **prompttekst verlaat de browser nooit.** Detectie is lokaal. Naar `/api/ingest` gaan alleen tellingen + metadata. Dat is wat het AVG-by-design-verkoopverhaal mogelijk maakt — een DPO kan in 5 minuten verifiëren (via DevTools Network-tab) dat er geen persoonsgegevens richting de servers stromen, alleen statistiek.
+Eén regel houdt het hele ontwerp overeind: **prompttekst verlaat de browser nooit.** Detectie is lokaal. Naar `/api/ingest` gaan alleen tellingen + metadata. Een DPO kan dit in 5 minuten verifiëren via DevTools Network-tab. Deze data-minimalisatie is een uitwerking van AVG-principes (art. 5 lid 1 sub c); de daadwerkelijke kwalificatie als "AVG-compliant" blijft de verantwoordelijkheid van de verwerkingsverantwoordelijke binnen zijn eigen verwerkingscontext.
 
 ---
 

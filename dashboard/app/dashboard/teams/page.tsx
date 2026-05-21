@@ -15,7 +15,7 @@ export default async function TeamsPage() {
     <div>
       <PageHeader
         title="Teams"
-        description="Welke afdelingen exposeren de meeste data via AI-tools?"
+        description="Welke afdelingen gebruiken AI-tools het meest? Input voor gerichte training, niet voor bestraffing."
       />
       <div className="px-8 py-7 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {teams.length === 0 && (
@@ -40,7 +40,7 @@ export default async function TeamsPage() {
                 </div>
                 <div
                   className="text-xs font-mono px-2 py-0.5 rounded bg-ink-100 text-ink-600"
-                  title="Aandeel van de zwaarst geëxposeerde team"
+                  title="Aandeel van het team met meeste AI-tool-activiteit"
                 >
                   {Math.round((t.items / max) * 100)}%
                 </div>

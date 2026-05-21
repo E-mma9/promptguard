@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #ffffff;
+  color: #0f172a;
+  font-feature-settings: "ss01", "cv01", "cv02";
+}
+
+/* Subtle gradient mesh used in the hero */
+.mesh-bg {
+  background:
+    radial-gradient(at 20% 20%, rgba(99, 102, 241, 0.35) 0px, transparent 50%),
+    radial-gradient(at 80% 0%, rgba(124, 58, 237, 0.25) 0px, transparent 50%),
+    radial-gradient(at 70% 60%, rgba(59, 130, 246, 0.22) 0px, transparent 50%);
+}
+
+/* Grain overlay (very subtle, gives premium feel) */
+.grain {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.6'/%3E%3C/svg%3E");
+  opacity: 0.04;
+  pointer-events: none;
+}
+
+.btn-primary {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg bg-white px-5 py-3 text-sm font-semibold text-ink-900 shadow-sm transition-all hover:bg-ink-100 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-white/30;
+}
+.btn-primary-dark {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg bg-ink-900 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:bg-ink-800 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-ink-900/30;
+}
+.btn-secondary {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg ring-1 ring-white/20 px-5 py-3 text-sm font-semibold text-white transition-all hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30;
+}
+.btn-secondary-light {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg ring-1 ring-ink-300 px-5 py-3 text-sm font-semibold text-ink-900 transition-all hover:bg-ink-50 hover:ring-ink-400 focus:outline-none focus:ring-2 focus:ring-ink-900/20;
+}
+
+.section-label {
+  @apply text-xs font-semibold uppercase tracking-[0.18em] text-brand-700;
+}
+.section-label-light {
+  @apply text-xs font-semibold uppercase tracking-[0.18em] text-brand-300;
+}

@@ -51,3 +51,9 @@ next-env.d.ts
 
 # Accidental nested clone
 /promptguard/
+
+# Local Claude Code settings (machine-specific)
+.claude/settings.local.json
+
+# Internal pitch/business material — kept local, not version-controlled
+pitch/

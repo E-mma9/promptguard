@@ -5,12 +5,22 @@ import { TOOL_LABELS, TYPE_LABELS, SEVERITY_LABELS, ACTION_LABELS } from '@/lib/
 import { fmtDateTime } from '@/lib/format';
 
 function csv(s: string | number | null | undefined): string {
-  return String(s ?? '').replace(/"/g, '""');
+  // CSV/Excel formula-injection guard: prefix dangerous leading chars
+  // with an apostrophe so spreadsheets treat the cell as text.
+  const v = String(s ?? '').replace(/"/g, '""');
+  if (v.length > 0 && /^[=+\-@\t\r]/.test(v)) return `'${v}`;
+  return v;
 }
 
 export async function GET(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return new Response('unauthorized', { status: 401 });
+
+  // Bulk export reveals raw detection-events for the entire org —
+  // restrict to admin role to match the /api/reports/quarterly contract.
+  if (user.role !== 'admin') {
+    return new Response('forbidden — admin only', { status: 403 });
+  }
 
   const url = new URL(req.url);
   const tool = url.searchParams.get('tool') || undefined;

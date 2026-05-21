@@ -3,17 +3,24 @@ import { prisma } from '@/lib/db';
 import { fmtDate } from '@/lib/format';
 import { PageHeader } from '@/components/PageHeader';
 import { ApiKeyDisplay } from './ApiKeyDisplay';
+import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
 export default async function SettingsPage() {
   const user = await requireUser();
-  const [teams, members, totalDetections] = await Promise.all([
+  const [teams, members, totalDetections, latestEvent] = await Promise.all([
     prisma.team.findMany({ where: { orgId: user.orgId }, orderBy: { name: 'asc' } }),
     prisma.user.findMany({ where: { orgId: user.orgId }, select: { id: true, email: true, name: true, role: true, createdAt: true } }),
     prisma.detection.count({ where: { orgId: user.orgId } }),
+    prisma.detection.findFirst({
+      where: { orgId: user.orgId },
+      orderBy: { detectedAt: 'desc' },
+      select: { detectorVersion: true, detectedAt: true },
+    }),
   ]);
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+  const activeDetectorVersion = latestEvent?.detectorVersion ?? '—';
 
   return (
     <div>
@@ -30,6 +37,42 @@ export default async function SettingsPage() {
             <Field label="Aangemaakt" value={fmtDate(user.org.createdAt)} />
             <Field label="Detection events" value={String(totalDetections)} mono />
             <Field label="Dashboard URL" value={baseUrl} mono small />
+            <Field label="Actieve detector-versie" value={activeDetectorVersion} mono />
+            <Field label="Hosting-regio" value="EU — Frankfurt (fra1)" />
+          </div>
+        </section>
+
+        <section className="pg-card p-6">
+          <h2 className="font-semibold text-ink-900">Juridische documenten</h2>
+          <p className="text-sm text-ink-500 mt-1 max-w-xl">
+            Concept-versies van de juridische documenten. Vóór ondertekening laat u
+            deze door uw eigen jurist controleren.
+          </p>
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <Link href="/legal/dpa" target="_blank" className="rounded-lg ring-1 ring-ink-200 px-4 py-3 hover:ring-brand-400 hover:bg-brand-50 transition-colors">
+              <div className="text-sm font-semibold text-ink-900">Verwerkersovereenkomst</div>
+              <div className="text-xs text-ink-500 mt-0.5">DPA conform AVG art. 28 →</div>
+            </Link>
+            <Link href="/terms" target="_blank" className="rounded-lg ring-1 ring-ink-200 px-4 py-3 hover:ring-brand-400 hover:bg-brand-50 transition-colors">
+              <div className="text-sm font-semibold text-ink-900">Algemene voorwaarden</div>
+              <div className="text-xs text-ink-500 mt-0.5">Gebruiks- en betaalvoorwaarden →</div>
+            </Link>
+            <Link href="/privacy" target="_blank" className="rounded-lg ring-1 ring-ink-200 px-4 py-3 hover:ring-brand-400 hover:bg-brand-50 transition-colors">
+              <div className="text-sm font-semibold text-ink-900">Privacyverklaring</div>
+              <div className="text-xs text-ink-500 mt-0.5">Hoe wij gegevens verwerken →</div>
+            </Link>
+            <Link href="/security" target="_blank" className="rounded-lg ring-1 ring-ink-200 px-4 py-3 hover:ring-brand-400 hover:bg-brand-50 transition-colors">
+              <div className="text-sm font-semibold text-ink-900">Beveiliging &amp; compliance</div>
+              <div className="text-xs text-ink-500 mt-0.5">Architectuur, audit, subverwerkers →</div>
+            </Link>
+            <Link href="/security/nen7510" target="_blank" className="rounded-lg ring-1 ring-ink-200 px-4 py-3 hover:ring-brand-400 hover:bg-brand-50 transition-colors">
+              <div className="text-sm font-semibold text-ink-900">NEN 7510-evidence</div>
+              <div className="text-xs text-ink-500 mt-0.5">Controls-mapping voor zorgklanten →</div>
+            </Link>
+            <Link href="/wettelijk-kader" target="_blank" className="rounded-lg ring-1 ring-ink-200 px-4 py-3 hover:ring-brand-400 hover:bg-brand-50 transition-colors">
+              <div className="text-sm font-semibold text-ink-900">Wettelijk kader</div>
+              <div className="text-xs text-ink-500 mt-0.5">AI Act, AVG, NIS2, DORA — wat u moet aantonen →</div>
+            </Link>
           </div>
         </section>
 

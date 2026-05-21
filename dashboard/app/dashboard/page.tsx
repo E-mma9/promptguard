@@ -57,7 +57,7 @@ export default async function OverviewPage() {
             accent="medium"
           />
           <KpiCard
-            label="Meest geëxposeerd"
+            label="Meest AI-tool-activiteit"
             value={data.mostExposedTeam ? data.mostExposedTeam.name : '—'}
             sub={data.mostExposedTeam ? `${fmtNum(data.mostExposedTeam.items)} items` : 'Geen data'}
             accent="low"

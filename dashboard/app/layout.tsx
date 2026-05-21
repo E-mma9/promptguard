@@ -4,7 +4,7 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'PromptGuard — Shadow AI Monitor',
   description:
-    'Zie wat uw medewerkers in ChatGPT, Claude, Gemini en Copilot plakken. Lokaal gedetecteerd, AVG- en AI Act-proof.',
+    'Zie welke gevoelige datacategorieën uw medewerkers in ChatGPT, Claude, Gemini en Copilot invoeren. Lokale detectie, EU-data-residency, ontworpen volgens AVG-data-minimalisatie.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

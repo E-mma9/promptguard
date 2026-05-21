@@ -15,7 +15,10 @@ function secret(): Uint8Array {
 }
 
 export async function hashPassword(plain: string): Promise<string> {
-  return bcrypt.hash(plain, 10);
+  // Cost 12 matches the claim made on /security and in the DPA — earlier
+  // versions used cost 10, which understated the security posture relative
+  // to the published documentation.
+  return bcrypt.hash(plain, 12);
 }
 
 export async function verifyPassword(plain: string, hash: string): Promise<boolean> {

@@ -81,7 +81,9 @@ PRIVACY BY DESIGN
 • No cookies, no cross-site tracking, no third-party analytics.
 • The extension never reads, stores or transmits prompt content, passwords, documents or any other personal input.
 • Data is never sold to third parties.
-• Fully AVG / GDPR compliant.
+• Designed in line with the data-minimisation principles of the EU GDPR (AVG) and the design principles of NEN 7510 and ISO 27001. Dashboard hosting in the EU (Frankfurt) only.
+
+Note: PromptGuard supports your organisation's compliance program — it does not, by itself, make your organisation compliant with the AI Act, GDPR or any other regulation. Customers remain responsible for their own legal assessment.
 
 
 FOR IT ADMINISTRATORS

@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Dashboard (app.promptguard.nl)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "dashboard", "run", "dev"],
+      "port": 3000
+    },
+    {
+      "name": "Marketing (promptguard.nl)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "marketing", "run", "dev"],
+      "port": 3001
+    }
+  ]
+}

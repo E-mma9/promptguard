@@ -1,0 +1,4 @@
+# Houdt de public/-map in git.
+# De Docker runner-stage doet `COPY --from=builder /app/public ./public`;
+# zonder deze map bestaat /app/public niet en faalt de build.
+# Statische bestanden hier worden door Next.js op de site-root geserveerd.

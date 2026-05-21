@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { requireUser } from '@/lib/auth';
 import { loadByTeam } from '@/lib/queries';
 import { fmtNum } from '@/lib/format';
@@ -15,7 +16,7 @@ export default async function TeamsPage() {
     <div>
       <PageHeader
         title="Teams"
-        description="Welke afdelingen gebruiken AI-tools het meest? Input voor gerichte training, niet voor bestraffing."
+        description="Welke afdelingen gebruiken AI-tools het meest? Klik op een team voor de volledige uitsplitsing. Input voor gerichte training, niet voor bestraffing."
       />
       <div className="px-8 py-7 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {teams.length === 0 && (
@@ -31,12 +32,15 @@ export default async function TeamsPage() {
           const topTools = Object.entries(t.byTool)
             .sort((a, b) => b[1] - a[1])
             .slice(0, 3);
-          return (
-            <div key={String(t.id)} className="pg-card p-5">
+
+          const inner = (
+            <>
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <h3 className="font-semibold text-ink-900">{t.name}</h3>
-                  <div className="text-xs text-ink-500">{fmtNum(t.events)} events &middot; {fmtNum(t.items)} items</div>
+                  <div className="text-xs text-ink-500">
+                    {fmtNum(t.events)} events &middot; {fmtNum(t.items)} items
+                  </div>
                 </div>
                 <div
                   className="text-xs font-mono px-2 py-0.5 rounded bg-ink-100 text-ink-600"
@@ -71,6 +75,28 @@ export default async function TeamsPage() {
                   </div>
                 </div>
               </div>
+            </>
+          );
+
+          // Teams with a slug get a drill-down page. The untagged "Geen team"
+          // bucket has no slug and stays a plain, non-clickable card.
+          if (t.slug) {
+            return (
+              <Link
+                key={String(t.id)}
+                href={`/dashboard/teams/${t.slug}`}
+                className="pg-card p-5 block transition-all hover:ring-2 hover:ring-brand-400 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-brand-500"
+              >
+                {inner}
+                <div className="mt-4 pt-3 border-t border-ink-100 text-xs font-semibold text-brand-700">
+                  Bekijk teamdetails →
+                </div>
+              </Link>
+            );
+          }
+          return (
+            <div key={String(t.id)} className="pg-card p-5">
+              {inner}
             </div>
           );
         })}

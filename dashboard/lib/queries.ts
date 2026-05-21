@@ -232,6 +232,94 @@ export async function loadByTeam(orgId: string, windowSpec: WindowSpec = default
   return Array.from(map.values()).sort((a, b) => b.items - a.items);
 }
 
+/**
+ * Full drill-down for a single team. Returns null when the slug does not
+ * resolve to a team in this org (so the page can render notFound()).
+ */
+export async function loadTeamDetail(
+  orgId: string,
+  slug: string,
+  windowSpec: WindowSpec = defaultWindow(30)
+) {
+  const team = await prisma.team.findUnique({
+    where: { orgId_slug: { orgId, slug } },
+  });
+  if (!team) return null;
+
+  const { from, to } = windowSpec;
+  const detections = await prisma.detection.findMany({
+    where: { orgId, teamId: team.id, detectedAt: { gte: from, lte: to } },
+    select: {
+      tool: true, totalItems: true, highest: true, counts: true,
+      action: true, detectedAt: true, installId: true, detectorVersion: true,
+    },
+    orderBy: { detectedAt: 'desc' },
+  });
+
+  let items = 0;
+  const severity = { high: 0, medium: 0, low: 0 };
+  const action = { blocked: 0, warned: 0, monitored: 0 };
+  const byToolMap: Record<string, number> = {};
+  const byTypeMap: Record<string, number> = {};
+  const installs = new Set<string>();
+  const detectorVersions = new Set<string>();
+
+  for (const d of detections) {
+    items += d.totalItems;
+    if (d.highest === 'high') severity.high += d.totalItems;
+    else if (d.highest === 'medium') severity.medium += d.totalItems;
+    else severity.low += d.totalItems;
+    if (d.action === 'blocked') action.blocked += 1;
+    else if (d.action === 'warned') action.warned += 1;
+    else action.monitored += 1;
+    byToolMap[d.tool] = (byToolMap[d.tool] ?? 0) + 1;
+    if (d.installId && d.installId !== 'anon') installs.add(d.installId);
+    if (d.detectorVersion) detectorVersions.add(d.detectorVersion);
+    const counts = parseCounts(d.counts);
+    for (const [k, v] of Object.entries(counts)) {
+      byTypeMap[k] = (byTypeMap[k] ?? 0) + (typeof v === 'number' ? v : 0);
+    }
+  }
+
+  // Daily activity series across the window.
+  const dayCount = Math.ceil((to.getTime() - from.getTime()) / (24 * 60 * 60 * 1000));
+  const buckets = new Map<string, { day: string; total: number }>();
+  for (let i = 0; i <= dayCount; i++) {
+    const key = new Date(from.getTime() + i * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    buckets.set(key, { day: key, total: 0 });
+  }
+  for (const d of detections) {
+    const b = buckets.get(d.detectedAt.toISOString().slice(0, 10));
+    if (b) b.total += 1;
+  }
+
+  return {
+    team: { id: team.id, name: team.name, slug: team.slug },
+    events: detections.length,
+    items,
+    severity,
+    action,
+    activeInstalls: installs.size,
+    detectorVersions: Array.from(detectorVersions).sort(),
+    byTool: Object.entries(byToolMap)
+      .map(([tool, events]) => ({ tool, events }))
+      .sort((a, b) => b.events - a.events),
+    byType: Object.entries(byTypeMap)
+      .map(([type, total]) => ({ type, total }))
+      .sort((a, b) => b.total - a.total),
+    series: Array.from(buckets.values()),
+    recent: detections.slice(0, 15).map((d) => ({
+      tool: d.tool,
+      action: d.action,
+      highest: d.highest,
+      totalItems: d.totalItems,
+      counts: parseCounts(d.counts),
+      detectedAt: d.detectedAt,
+    })),
+    window: { from, to },
+  };
+}
+
 export async function loadByTool(orgId: string, windowSpec: WindowSpec = defaultWindow(30)) {
   const detections = await prisma.detection.findMany({
     where: { orgId, detectedAt: { gte: windowSpec.from, lte: windowSpec.to } },

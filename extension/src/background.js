@@ -33,6 +33,18 @@ const DEFAULT_SETTINGS = {
 };
 
 /**
+ * A dashboard URL is acceptable if it uses HTTPS, or HTTP to localhost or an
+ * RFC1918 private LAN address (or an mDNS .local host). Self-hosted PoC/LAN
+ * dashboards run on plain HTTP; public HTTP endpoints stay rejected so
+ * metadata is never sent in the clear across the internet.
+ */
+function isAcceptableDashboardUrl(url) {
+  if (typeof url !== 'string' || url === '') return false;
+  if (url.startsWith('https://')) return true;
+  return /^http:\/\/(localhost|127\.0\.0\.1|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}|[a-z0-9-]+\.local)(:\d+)?(\/|$)/i.test(url);
+}
+
+/**
  * Read effective settings = managed (forced by IT) overrides local (user-set).
  * Returns { settings, managed: { apiBase: true, ... } } so callers know which
  * keys are locked.
@@ -47,7 +59,7 @@ async function getEffectiveSettings() {
     // managed not available on this browser/platform — fine
   }
   // Validate managed policy values before using them
-  if (managedRaw.apiBase !== undefined && !managedRaw.apiBase.startsWith('https://')) {
+  if (managedRaw.apiBase !== undefined && !isAcceptableDashboardUrl(managedRaw.apiBase)) {
     console.warn('[PromptGuard] Managed policy: rejected insecure apiBase');
     delete managedRaw.apiBase;
   }
@@ -205,9 +217,8 @@ async function flushQueue() {
     return { ok: false, reason: 'no-api-config', queued: queue.length };
   }
 
-  // Allow https:// everywhere, and http:// only on true localhost (not localhost.evil.com).
-  const isLocalhost = /^http:\/\/localhost(:\d+)?(\/|$)/.test(settings.apiBase);
-  if (!settings.apiBase.startsWith('https://') && !isLocalhost) {
+  // HTTPS anywhere; HTTP only to localhost / RFC1918 LAN / *.local.
+  if (!isAcceptableDashboardUrl(settings.apiBase)) {
     return { ok: false, reason: 'insecure-url' };
   }
 

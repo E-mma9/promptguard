@@ -1,23 +1,27 @@
 import Link from 'next/link';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { Main } from '@/components/Main';
 
 export const metadata = {
   title: 'Prijzen — eenvoudig, per organisatie',
   description:
-    'PromptGuard pricing: één heldere prijs per organisatie, niet per medewerker. Vanaf € 79/maand. Zorg- en Enterprise-tarieven op aanvraag.',
+    'PromptGuard pricing: één heldere vaste maandprijs per organisatie voor MKB, per-medewerker vanaf 500 werkplekken. Vanaf € 175/maand. Zorg- en Enterprise-tarieven op aanvraag.',
 };
 
 type Tier = {
   name: string;
   tagline: string;
+  /** Flat monthly fee, pre-formatted in Dutch notation. */
   price: string;
-  priceNote: string;
+  /** Werkplek-bandbreedte, e.g. "5–25 werkplekken". */
+  range: string;
+  /** Effective per-werkplek price for this tier. */
+  perWp: string;
   cta: string;
   ctaHref: string;
   highlighted?: boolean;
   features: string[];
-  excludes?: string[];
 };
 
 const tiers: Tier[] = [
@@ -25,7 +29,8 @@ const tiers: Tier[] = [
     name: 'Starter',
     tagline: 'Voor organisaties van 5 tot 25 medewerkers',
     price: '€ 175',
-    priceNote: '€ 7,00 / medewerker · vaste maandprijs',
+    range: '5–25 werkplekken',
+    perWp: '€ 7,00 per werkplek',
     cta: 'Begin een proefperiode',
     ctaHref: '/contact',
     features: [
@@ -41,7 +46,8 @@ const tiers: Tier[] = [
     name: 'Team',
     tagline: 'Voor groeiend MKB van 26 tot 100 medewerkers',
     price: '€ 595',
-    priceNote: 'vanaf € 5,95 / medewerker · vaste maandprijs',
+    range: '26–100 werkplekken',
+    perWp: 'vanaf € 5,95 per werkplek',
     cta: 'Demo aanvragen',
     ctaHref: '/contact',
     highlighted: true,
@@ -58,7 +64,8 @@ const tiers: Tier[] = [
     name: 'Business',
     tagline: 'Voor organisaties van 101 tot 500 medewerkers',
     price: '€ 1.999',
-    priceNote: 'vanaf € 3,99 / medewerker · vaste maandprijs',
+    range: '101–500 werkplekken',
+    perWp: 'vanaf € 3,99 per werkplek',
     cta: 'Demo aanvragen',
     ctaHref: '/contact',
     features: [
@@ -77,26 +84,51 @@ export default function PrijzenPage() {
     <>
       <div className="bg-ink-950 text-white">
         <Header variant="dark" />
+      </div>
+
+      <Main>
+      <section className="bg-ink-950 text-white">
         <div className="mx-auto max-w-7xl px-6 pt-16 pb-12 text-center">
           <span className="section-label-light">Prijzen</span>
           <h1 className="mt-3 text-5xl md:text-6xl font-bold tracking-tight">
             Eén heldere prijs per organisatie.
           </h1>
-          <p className="mt-5 text-lg text-ink-300 max-w-2xl mx-auto">
-            Geen per-medewerker-rekensommen voor MKB. Maandelijks opzegbaar. 14 dagen proef zonder
-            creditcard. Voor 500+ medewerkers stappen we over op een per-medewerker-model passend bij
-            uw inkooptraject.
+          <p className="mt-5 text-lg text-ink-300 max-w-2xl mx-auto leading-relaxed">
+            MKB betaalt een vaste maandprijs per organisatie — geen per-medewerker-rekensommen.
+            Maandelijks opzegbaar. 14 dagen proef zonder creditcard. Vanaf 500 werkplekken stappen
+            we over op een per-werkplek-model dat past bij uw inkooptraject.
           </p>
+
+          {/* Value anchor — what €7/wp actually costs */}
+          <div className="mt-9 inline-flex flex-col sm:flex-row items-stretch gap-px overflow-hidden rounded-2xl ring-1 ring-white/15 bg-white/5 text-left">
+            <Anchor
+              big="€ 0,23"
+              small="per medewerker per dag"
+              note="Starter-tarief van € 7,00/maand, omgerekend over een werkmaand."
+            />
+            <Anchor
+              big="€ 20.000.000"
+              small="maximale AVG-boete"
+              note="Eén compliance-tekort onder AVG art. 83 — de verhouding spreekt voor zich."
+            />
+          </div>
         </div>
-      </div>
+      </section>
 
       <section className="bg-white py-20">
         <div className="mx-auto max-w-7xl px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {tiers.map((tier) => (
               <TierCard key={tier.name} tier={tier} />
             ))}
           </div>
+
+          <p className="mt-8 max-w-3xl text-sm text-ink-600 leading-relaxed">
+            <strong className="text-ink-900">Vaste maandprijs, niet per seat.</strong> U betaalt
+            het tarief van het pakket dat bij uw aantal werkplekken hoort — niet per individuele
+            licentie. De prijs-per-werkplek hieronder is puur ter vergelijking: hij daalt naarmate
+            uw organisatie groeit. Bij overgang naar een hoger pakket rekenen we pro-rata af.
+          </p>
         </div>
       </section>
 
@@ -112,10 +144,14 @@ export default function PrijzenPage() {
                   Vanaf € 4,00 per medewerker per maand — bij 500+ werkplekken.
                 </h2>
                 <p className="mt-5 text-ink-300 leading-relaxed max-w-2xl">
-                  Per-medewerker-pricing met volumekorting vanaf 500 werkplekken. Inclusief
-                  jaarcontract, multi-jaarkorting, dedicated account-management en SLA met
-                  financiële garantie. Indicatief: 500 werkplekken vanaf € 24.000/jaar, 2.000
-                  werkplekken vanaf € 96.000/jaar.
+                  Vanaf 500 werkplekken stappen we over op een per-werkplek-tarief met
+                  volumekorting. Inclusief jaarcontract, multi-jaarkorting, dedicated
+                  account-management en SLA met financiële garantie.
+                </p>
+                <p className="mt-4 text-sm text-ink-300">
+                  Indicatief: 500 werkplekken vanaf{' '}
+                  <strong className="text-white">€ 24.000 per jaar</strong>; 2.000 werkplekken
+                  vanaf <strong className="text-white">€ 96.000 per jaar</strong>.
                 </p>
                 <ul className="mt-7 grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-6 text-sm text-ink-200">
                   <li className="flex gap-2"><Check /> Pilot 60–90 dagen, vaste prijs</li>
@@ -144,19 +180,23 @@ export default function PrijzenPage() {
           <div className="rounded-3xl bg-gradient-to-br from-emerald-900 to-emerald-950 text-white p-10 md:p-14 ring-1 ring-emerald-800">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
               <div className="lg:col-span-2">
-                <span className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300">
+                <span className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-200">
                   Zorg &amp; sector-specifiek
                 </span>
                 <h2 className="mt-3 text-3xl md:text-4xl font-bold tracking-tight">
                   Vanaf € 5,00 per medewerker per maand — voor zorgaanbieders.
                 </h2>
-                <p className="mt-5 text-emerald-100 leading-relaxed max-w-2xl">
+                <p className="mt-5 text-emerald-50 leading-relaxed max-w-2xl">
                   Voor zorgaanbieders en andere sectoren met NEN 7510, Wabvpz, Wkkgz, BIO, DORA of
-                  vergelijkbare verplichtingen. Premie-tier omdat de implementatie hierop is
-                  toegesneden: kant-en-klare evidence, FG-bijstand en zwaardere SLA. Indicatief:
-                  2.000 zorgmedewerkers vanaf € 120.000/jaar inclusief NEN 7510-evidence.
+                  vergelijkbare verplichtingen. Premie-tarief omdat de implementatie hierop is
+                  toegesneden: kant-en-klare evidence, FG-bijstand en zwaardere SLA.
                 </p>
-                <ul className="mt-7 grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-6 text-sm text-emerald-100">
+                <p className="mt-4 text-sm text-emerald-50">
+                  Indicatief: 2.000 zorgmedewerkers vanaf{' '}
+                  <strong className="text-white">€ 120.000 per jaar</strong>, inclusief
+                  NEN 7510-evidence.
+                </p>
+                <ul className="mt-7 grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-6 text-sm text-emerald-50">
                   <li className="flex gap-2"><Check light /> NEN 7510-controls-evidence kant-en-klaar</li>
                   <li className="flex gap-2"><Check light /> Z-CERT-koppeling (zorg)</li>
                   <li className="flex gap-2"><Check light /> DPIA-bouwsteen voor uw eigen DPIA</li>
@@ -189,16 +229,18 @@ export default function PrijzenPage() {
           </h2>
           <div className="mt-10 space-y-7">
             <Faq q="Per medewerker of per organisatie?">
-              Per organisatie. Wij geloven niet in user-seat-pricing voor een compliance-tool —
-              uw DPO koopt geen 75 licenties, die koopt één capability.
+              Voor MKB per organisatie: één vaste maandprijs voor uw hele bedrijf. Wij geloven niet
+              in user-seat-pricing voor een compliance-tool — uw DPO koopt geen 75 licenties, die
+              koopt één capability. Vanaf 500 werkplekken hanteren we wél een per-werkplek-tarief,
+              omdat dat beter aansluit bij grote inkooptrajecten.
             </Faq>
             <Faq q="Wat als ik halverwege het jaar groei van 80 naar 110 medewerkers?">
-              U stapt over naar het volgende tier op het moment van overgang, pro-rata. Geen
+              U stapt over naar het volgende pakket op het moment van overgang, pro-rata. Geen
               boetes, geen lock-in.
             </Faq>
             <Faq q="Krijgen we korting als jaarcontract?">
               Ja — 10% op jaarbasis bij vooruitbetaling. Voor multi-jaarcontracten (2 of 3 jaar)
-              tot 15-20%, op aanvraag.
+              tot 15–20%, op aanvraag.
             </Faq>
             <Faq q="Wat is inbegrepen in de proefperiode?">
               14 dagen volledige toegang zonder creditcard. Geen functiebeperkingen, geen
@@ -216,9 +258,22 @@ export default function PrijzenPage() {
           </div>
         </div>
       </section>
+      </Main>
 
       <Footer />
     </>
+  );
+}
+
+function Anchor({ big, small, note }: { big: string; small: string; note: string }) {
+  return (
+    <div className="bg-white/[0.04] px-6 py-5 sm:max-w-xs">
+      <div className="text-2xl font-bold tracking-tight text-white">{big}</div>
+      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-300">
+        {small}
+      </div>
+      <p className="mt-2 text-xs text-ink-300 leading-relaxed">{note}</p>
+    </div>
   );
 }
 
@@ -227,7 +282,7 @@ function TierCard({ tier }: { tier: Tier }) {
   return (
     <div
       className={
-        'relative rounded-2xl p-8 ' +
+        'relative flex flex-col rounded-2xl p-8 ' +
         (isHighlight
           ? 'bg-ink-950 text-white ring-2 ring-brand-500 shadow-xl'
           : 'bg-white text-ink-900 ring-1 ring-ink-200')
@@ -238,19 +293,36 @@ function TierCard({ tier }: { tier: Tier }) {
           Meest gekozen
         </div>
       )}
-      <h3 className={'text-xl font-bold ' + (isHighlight ? 'text-white' : 'text-ink-900')}>
+      <h2 className={'text-xl font-bold ' + (isHighlight ? 'text-white' : 'text-ink-900')}>
         {tier.name}
-      </h3>
+      </h2>
       <p className={'mt-1 text-sm ' + (isHighlight ? 'text-ink-300' : 'text-ink-600')}>
         {tier.tagline}
       </p>
 
       <div className="mt-6">
-        <div className={'text-5xl font-bold tracking-tight ' + (isHighlight ? 'text-white' : 'text-ink-900')}>
-          {tier.price}
+        <div className="flex items-baseline gap-1.5">
+          <span
+            className={
+              'text-5xl font-bold tracking-tight ' +
+              (isHighlight ? 'text-white' : 'text-ink-900')
+            }
+          >
+            {tier.price}
+          </span>
+          <span className={'text-sm font-medium ' + (isHighlight ? 'text-ink-300' : 'text-ink-500')}>
+            / maand
+          </span>
         </div>
-        <div className={'mt-1 text-xs ' + (isHighlight ? 'text-ink-400' : 'text-ink-500')}>
-          {tier.priceNote}
+        <div className={'mt-2 text-sm ' + (isHighlight ? 'text-ink-300' : 'text-ink-600')}>
+          Vaste maandprijs · {tier.range}
+        </div>
+        <div
+          className={
+            'mt-1 text-xs ' + (isHighlight ? 'text-ink-400' : 'text-ink-500')
+          }
+        >
+          Ter vergelijking: {tier.perWp} per maand
         </div>
       </div>
 

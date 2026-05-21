@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { Main } from '@/components/Main';
+import { CtaSection } from '@/components/CtaSection';
 
 export const metadata = {
   title: 'Voor het Nederlandse MKB',
@@ -11,9 +13,13 @@ export const metadata = {
 export default function MkbPage() {
   return (
     <>
-      <div className="bg-ink-950 text-white relative overflow-hidden">
-        <div className="absolute inset-0 mesh-bg" aria-hidden="true" />
+      <div className="bg-ink-950 text-white">
         <Header variant="dark" />
+      </div>
+
+      <Main>
+      <section className="bg-ink-950 text-white relative overflow-hidden">
+        <div className="absolute inset-0 mesh-bg" aria-hidden="true" />
         <div className="relative mx-auto max-w-7xl px-6 pt-16 pb-20">
           <div className="max-w-3xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full ring-1 ring-white/20 bg-white/5 text-xs font-medium">
@@ -38,7 +44,7 @@ export default function MkbPage() {
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
       <section className="bg-white py-24">
         <div className="mx-auto max-w-7xl px-6">
@@ -114,19 +120,12 @@ export default function MkbPage() {
         </div>
       </section>
 
-      <section className="bg-gradient-to-br from-brand-700 to-brand-900 text-white py-24">
-        <div className="mx-auto max-w-7xl px-6 text-center">
-          <h2 className="text-4xl md:text-5xl font-bold tracking-tight">
-            Begin een 14-dagen proef.
-          </h2>
-          <p className="mt-5 text-lg text-brand-100 max-w-2xl mx-auto">
-            Geen creditcard. Geen verkoper aan de telefoon. Gewoon proberen.
-          </p>
-          <div className="mt-9">
-            <Link href="/contact" className="btn-primary">Start de proefperiode</Link>
-          </div>
-        </div>
-      </section>
+      <CtaSection
+        heading="Begin een 14-dagen proef."
+        body="Geen creditcard. Geen verkoper aan de telefoon. Gewoon proberen."
+        primary={{ label: 'Start de proefperiode', href: '/contact' }}
+      />
+      </Main>
 
       <Footer />
     </>

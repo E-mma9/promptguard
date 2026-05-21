@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { Main } from '@/components/Main';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
@@ -81,6 +82,10 @@ export default function WettelijkKaderPage() {
     <>
       <div className="bg-ink-950 text-white">
         <Header variant="dark" />
+      </div>
+
+      <Main>
+      <section className="bg-ink-950 text-white">
         <div className="mx-auto max-w-7xl px-6 pt-16 pb-16 text-center">
           <span className="section-label-light">Compliance-kader</span>
           <h1 className="mt-3 text-5xl md:text-6xl font-bold tracking-tight max-w-4xl mx-auto leading-[1.05]">
@@ -92,7 +97,7 @@ export default function WettelijkKaderPage() {
             artikelnummers — uw jurist of DPO kan elke claim direct natrekken.
           </p>
         </div>
-      </div>
+      </section>
 
       <section className="bg-amber-50 border-y border-amber-200 py-6">
         <div className="mx-auto max-w-7xl px-6 text-sm text-amber-900 leading-relaxed">
@@ -163,6 +168,7 @@ export default function WettelijkKaderPage() {
               target="_blank"
               rel="noreferrer"
               className="btn-primary-dark"
+              aria-label="Volledig kader bekijken — opent in een nieuw tabblad"
             >
               Volledig kader bekijken
             </a>
@@ -170,6 +176,7 @@ export default function WettelijkKaderPage() {
           </div>
         </div>
       </section>
+      </Main>
 
       <Footer />
     </>

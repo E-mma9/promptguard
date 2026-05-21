@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { Main } from '@/components/Main';
 
 export const metadata = {
   title: 'Contact — plan een gesprek',
@@ -13,6 +14,10 @@ export default function ContactPage() {
     <>
       <div className="bg-ink-950 text-white">
         <Header variant="dark" />
+      </div>
+
+      <Main>
+      <section className="bg-ink-950 text-white">
         <div className="mx-auto max-w-7xl px-6 pt-16 pb-12 text-center">
           <span className="section-label-light">Contact</span>
           <h1 className="mt-3 text-5xl md:text-6xl font-bold tracking-tight">
@@ -22,7 +27,7 @@ export default function ContactPage() {
             30 minuten. Vrijblijvend. Vooraf delen we onze juridische en technische documentatie.
           </p>
         </div>
-      </div>
+      </section>
 
       <section className="bg-white py-24">
         <div className="mx-auto max-w-3xl px-6">
@@ -63,18 +68,22 @@ export default function ContactPage() {
               <li className="flex gap-2"><Bullet /> Wettelijk kader-overzicht (AI Act, AVG, NIS2, DORA)</li>
             </ul>
             <div className="mt-7">
-              <Link href="/wettelijk-kader" className="text-sm font-semibold text-brand-700 hover:underline">
-                Of lees alvast het wettelijk kader →
+              <Link
+                href="/wettelijk-kader"
+                className="inline-block text-sm font-semibold text-brand-700 hover:underline focus-ring"
+              >
+                Of lees alvast het wettelijk kader <span aria-hidden="true">→</span>
               </Link>
             </div>
           </div>
 
-          <div className="mt-10 text-center text-sm text-ink-500">
+          <div className="mt-10 text-center text-sm text-ink-600">
             Liever direct bellen? Bel ons gerust op werkdagen tussen 09:00 en 17:00 — telefoonnummer
             ontvangt u na uw e-mail.
           </div>
         </div>
       </section>
+      </Main>
 
       <Footer />
     </>
@@ -87,7 +96,7 @@ function ContactCard({ titel, email, body }: { titel: string; email: string; bod
       <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-700">{titel}</div>
       <a
         href={`mailto:${email}`}
-        className="mt-2 block text-lg font-semibold text-ink-900 hover:text-brand-700 transition-colors"
+        className="mt-2 inline-block text-lg font-semibold text-ink-900 hover:text-brand-700 transition-colors focus-ring"
       >
         {email}
       </a>

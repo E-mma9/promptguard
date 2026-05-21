@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { Main } from '@/components/Main';
 
 export const metadata = {
   title: 'Over ons — wie zit er achter PromptGuard',
@@ -13,6 +14,10 @@ export default function OverOnsPage() {
     <>
       <div className="bg-ink-950 text-white">
         <Header variant="dark" />
+      </div>
+
+      <Main>
+      <section className="bg-ink-950 text-white">
         <div className="mx-auto max-w-7xl px-6 pt-16 pb-12">
           <span className="section-label-light">Over ons</span>
           <h1 className="mt-3 text-5xl md:text-6xl font-bold tracking-tight max-w-4xl">
@@ -25,7 +30,7 @@ export default function OverOnsPage() {
             niet ingewikkelder maakte dan nodig.
           </p>
         </div>
-      </div>
+      </section>
 
       <section className="bg-white py-24">
         <div className="mx-auto max-w-3xl px-6 space-y-12">
@@ -66,8 +71,10 @@ export default function OverOnsPage() {
                   <strong className="text-ink-900">Eerlijk over wat we niet zijn.</strong> We zijn
                   geen NEN 7510-gecertificeerd bedrijf. We zijn geen vervanging van uw FG of
                   CISO. We dekken geen werkgevers­aansprakelijkheid. Het staat allemaal expliciet
-                  op onze pagina <Link href="/wettelijk-kader" className="text-brand-700 underline">
-                  /wettelijk-kader</Link>.
+                  op onze pagina{' '}
+                  <Link href="/wettelijk-kader" className="text-brand-700 underline focus-ring">
+                    wettelijk kader
+                  </Link>.
                 </div>
               </li>
               <li className="flex gap-3">
@@ -118,6 +125,7 @@ export default function OverOnsPage() {
           </div>
         </div>
       </section>
+      </Main>
 
       <Footer />
     </>

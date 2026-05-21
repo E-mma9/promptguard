@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { Main } from '@/components/Main';
+import { CtaSection } from '@/components/CtaSection';
 
 export const metadata = {
   title: 'Voor de financiële sector — DORA, DNB, AFM',
@@ -11,9 +13,13 @@ export const metadata = {
 export default function FinancieelPage() {
   return (
     <>
-      <div className="bg-ink-950 text-white relative overflow-hidden">
-        <div className="absolute inset-0 mesh-bg" aria-hidden="true" />
+      <div className="bg-ink-950 text-white">
         <Header variant="dark" />
+      </div>
+
+      <Main>
+      <section className="bg-ink-950 text-white relative overflow-hidden">
+        <div className="absolute inset-0 mesh-bg" aria-hidden="true" />
         <div className="relative mx-auto max-w-7xl px-6 pt-16 pb-20">
           <div className="max-w-3xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full ring-1 ring-white/20 bg-white/5 text-xs font-medium">
@@ -38,7 +44,7 @@ export default function FinancieelPage() {
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
       <section className="bg-white py-24">
         <div className="mx-auto max-w-7xl px-6">
@@ -105,22 +111,17 @@ export default function FinancieelPage() {
         </div>
       </section>
 
-      <section className="bg-gradient-to-br from-brand-700 to-brand-900 text-white py-24">
-        <div className="mx-auto max-w-7xl px-6 text-center">
-          <h2 className="text-4xl md:text-5xl font-bold tracking-tight">
-            Klaar voor uw eerste DORA-toetsing?
-          </h2>
-          <p className="mt-5 text-lg text-brand-100 max-w-2xl mx-auto">
-            Stuur uw security-questionnaire — we beantwoorden binnen 3 werkdagen.
-          </p>
-          <div className="mt-9 flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/contact" className="btn-primary">Plan een gesprek</Link>
-            <a href="mailto:compliance@promptguard.nl" className="btn-secondary">
-              compliance@promptguard.nl
-            </a>
-          </div>
-        </div>
-      </section>
+      <CtaSection
+        heading="Klaar voor uw eerste DORA-toetsing?"
+        body="Stuur uw security-questionnaire — we beantwoorden binnen 3 werkdagen."
+        primary={{ label: 'Plan een gesprek', href: '/contact' }}
+        secondary={{
+          label: 'E-mail compliance@promptguard.nl',
+          href: 'mailto:compliance@promptguard.nl',
+          external: true,
+        }}
+      />
+      </Main>
 
       <Footer />
     </>

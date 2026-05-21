@@ -15,11 +15,15 @@ export function Header({ variant = 'dark' }: { variant?: 'dark' | 'light' }) {
       }
     >
       <div className="mx-auto max-w-7xl px-6 py-5 flex items-center justify-between">
-        <Link href="/" aria-label="PromptGuard — naar home">
+        <Link
+          href="/"
+          aria-label="PromptGuard — naar de homepagina"
+          className={isDark ? 'focus-ring-dark' : 'focus-ring'}
+        >
           <Logo light={isDark} />
         </Link>
 
-        <nav className="hidden md:flex items-center gap-7 text-sm">
+        <nav aria-label="Hoofdnavigatie" className="hidden md:flex items-center gap-7 text-sm">
           <NavLink href="/oplossingen/zorg" dark={isDark}>Zorg</NavLink>
           <NavLink href="/oplossingen/financieel" dark={isDark}>Financieel</NavLink>
           <NavLink href="/oplossingen/mkb" dark={isDark}>MKB</NavLink>
@@ -32,8 +36,10 @@ export function Header({ variant = 'dark' }: { variant?: 'dark' | 'light' }) {
           <a
             href={`${APP_URL}/login`}
             className={
-              'text-sm font-medium ' +
-              (isDark ? 'text-white/85 hover:text-white' : 'text-ink-700 hover:text-ink-900')
+              'text-sm font-medium px-1 py-0.5 ' +
+              (isDark
+                ? 'text-white hover:text-white/80 focus-ring-dark'
+                : 'text-ink-700 hover:text-ink-900 focus-ring')
             }
           >
             Inloggen
@@ -63,8 +69,10 @@ function NavLink({
     <Link
       href={href}
       className={
-        'font-medium transition-colors ' +
-        (dark ? 'text-white/80 hover:text-white' : 'text-ink-700 hover:text-ink-900')
+        'font-medium transition-colors px-1 py-0.5 ' +
+        (dark
+          ? 'text-white hover:text-white/80 focus-ring-dark'
+          : 'text-ink-700 hover:text-ink-900 focus-ring')
       }
     >
       {children}

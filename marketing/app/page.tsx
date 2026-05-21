@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { Main } from '@/components/Main';
 import { ComplianceBadges } from '@/components/ComplianceBadges';
+import { CtaSection, Arrow } from '@/components/CtaSection';
 
 export default function HomePage() {
   return (
@@ -9,11 +11,14 @@ export default function HomePage() {
       {/* ============================================================
           HERO — dark, gradient mesh background
           ============================================================ */}
+      <div className="bg-ink-950">
+        <Header variant="dark" />
+      </div>
+
+      <Main>
       <section className="relative bg-ink-950 overflow-hidden">
         <div className="absolute inset-0 mesh-bg" aria-hidden="true" />
         <div className="absolute inset-0 grain" aria-hidden="true" />
-        <Header variant="dark" />
-
         <div className="relative mx-auto max-w-7xl px-6 pt-20 pb-32 text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full ring-1 ring-white/20 bg-white/5 text-xs font-medium text-white/90">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
@@ -51,7 +56,7 @@ export default function HomePage() {
         {/* Compliance band */}
         <div className="relative border-t border-white/10 bg-white/[0.02] py-7">
           <div className="mx-auto max-w-7xl px-6">
-            <p className="text-center text-xs uppercase tracking-[0.18em] text-ink-500 mb-5">
+            <p className="text-center text-xs uppercase tracking-[0.18em] text-ink-400 mb-5">
               Ontworpen tegen het Europese en Nederlandse compliance-kader
             </p>
             <ComplianceBadges light />
@@ -248,25 +253,13 @@ export default function HomePage() {
       {/* ============================================================
           FINAL CTA
           ============================================================ */}
-      <section className="bg-gradient-to-br from-brand-700 to-brand-900 text-white py-24">
-        <div className="mx-auto max-w-7xl px-6 text-center">
-          <h2 className="text-4xl md:text-5xl font-bold tracking-tight">
-            Klaar om uw AI-gebruik bewijsbaar te maken?
-          </h2>
-          <p className="mt-5 text-lg text-brand-100 max-w-2xl mx-auto">
-            30 minuten demo. Vrijblijvend. We laten u zien hoe een DPO uw kwartaalrapport zou lezen.
-          </p>
-          <div className="mt-9 flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/contact" className="btn-primary">
-              Demo aanvragen
-              <Arrow />
-            </Link>
-            <a href="mailto:info@promptguard.nl" className="btn-secondary">
-              Stel een vraag
-            </a>
-          </div>
-        </div>
-      </section>
+      <CtaSection
+        heading="Klaar om uw AI-gebruik bewijsbaar te maken?"
+        body="30 minuten demo. Vrijblijvend. We laten u zien hoe een DPO uw kwartaalrapport zou lezen."
+        primary={{ label: 'Demo aanvragen', href: '/contact', withArrow: true }}
+        secondary={{ label: 'Stel een vraag', href: 'mailto:info@promptguard.nl', external: true }}
+      />
+      </Main>
 
       <Footer />
     </>
@@ -276,14 +269,6 @@ export default function HomePage() {
 /* ============================================================
    SMALL COMPONENTS
    ============================================================ */
-
-function Arrow() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-      <path d="M2 7h10m0 0L8 3m4 4l-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
 
 function Stat({ number, label, body }: { number: string; label: string; body: string }) {
   return (
@@ -334,7 +319,8 @@ function SectorCard({
   return (
     <Link
       href={href}
-      className="group block rounded-2xl bg-gradient-to-br from-ink-900 to-ink-950 p-7 text-white ring-1 ring-ink-800 hover:ring-brand-500 transition-all hover:-translate-y-0.5"
+      aria-label={`${title} — lees meer`}
+      className="group block rounded-2xl bg-gradient-to-br from-ink-900 to-ink-950 p-7 text-white ring-1 ring-ink-800 hover:ring-brand-500 transition-all hover:-translate-y-0.5 focus-ring-dark"
     >
       <span className="inline-block text-[11px] font-bold uppercase tracking-[0.18em] text-brand-300">
         {tag}
@@ -342,9 +328,9 @@ function SectorCard({
       <h3 className="mt-3 text-xl font-semibold leading-snug">{title}</h3>
       <p className="mt-3 text-sm text-ink-300 leading-relaxed">{body}</p>
       <div className="mt-6 pt-5 border-t border-ink-800 flex items-center justify-between text-xs">
-        <span className="text-ink-400">{kicker}</span>
+        <span className="text-ink-300">{kicker}</span>
         <span className="text-brand-300 font-semibold group-hover:translate-x-1 transition-transform">
-          Lees meer →
+          Lees meer <span aria-hidden="true">→</span>
         </span>
       </div>
     </Link>
@@ -370,11 +356,11 @@ function Panel({
           }
         >
           {positive ? (
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
               <path d="M3 7l2.5 2.5L11 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           ) : (
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
               <path d="M4 4l6 6m0-6l-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             </svg>
           )}

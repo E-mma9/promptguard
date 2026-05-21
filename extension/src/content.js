@@ -44,17 +44,33 @@
   };
 
   function isPromptInput(el) {
-    if (!el) return false;
+    if (!el || el.nodeType !== 1) return false;
     if (el.tagName === 'TEXTAREA') return true;
     if (el.tagName === 'INPUT' && el.type === 'text') return true;
+    // ChatGPT/Claude use ProseMirror: the contenteditable attribute sits on
+    // the editor root, but paste/input/keydown events fire on an inner node
+    // (e.g. a <p>). isContentEditable is inherited, so it is true on the
+    // inner node too — checking the attribute alone misses every paste.
+    if (el.isContentEditable) return true;
     if (el.getAttribute && el.getAttribute('contenteditable') === 'true') return true;
     return false;
+  }
+
+  // Resolve the editor root for a contenteditable node so multi-paragraph
+  // prompts are read in full, not just the <p> the event fired on.
+  function editorRoot(el) {
+    if (el && el.closest) {
+      const root = el.closest('[contenteditable="true"], [contenteditable=""]');
+      if (root) return root;
+    }
+    return el;
   }
 
   function getInputText(el) {
     if (!el) return '';
     if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') return el.value || '';
-    return el.innerText || el.textContent || '';
+    const root = editorRoot(el);
+    return root.innerText || root.textContent || '';
   }
 
   function severityRank(s) {
